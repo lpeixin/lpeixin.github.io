@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-Hans" data-theme="light" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<title>Peixin Liu — 软件工程师 / AI Agent 开发者</title>
+<meta name="description" content="专注探索 AI Agent 技术栈与应用开发，关注 Agent 架构、MCP、Agent Skills 等方向。也喜欢 Vibe Coding，通过 AI 快速把想法变成有趣的工具和产品，并不断迭代、打磨，让它们变得越来越好用。Exploring AI agents through hands-on development, with a focus on agent architectures, MCP, Agent Skills, and the tooling around them. I also enjoy vibe coding — turning ideas into interesting tools and products with AI, then continuously iterating on them to make them more useful and enjoyable.">
+<meta name="author" content="Peixin Liu">
+<meta name="color-scheme" content="light dark">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Peixin Liu — 软件工程师 / AI Agent 开发者">
+<meta property="og:description" content="专注探索 AI Agent 技术栈与应用开发，关注 Agent 架构、MCP、Agent Skills 等方向。Exploring AI agents through hands-on development, with a focus on agent architectures, MCP, Agent Skills, and the tooling around them.">
+<meta property="og:url" content="https://lpeixin.github.io/">
+<meta property="og:image" content="https://lpeixin.github.io/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="canonical" href="https://lpeixin.github.io/">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/favicon.svg">
+<link rel="preconnect" href="https://avatars.githubusercontent.com">
+
+<link rel="stylesheet" href="assets/css/style.css">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Peixin Liu",
+  "alternateName": "lpeixin",
+  "jobTitle": "Software Engineer",
+  "description": "Software Engineer and AI Agent developer working on AI Agent development, agent architectures, MCP, Agent Skills, quantitative research and local-first knowledge tools.",
+  "url": "https://lpeixin.github.io/",
+  "image": "https://avatars.githubusercontent.com/u/1281563?v=4",
+  "email": "mailto:",
+  "sameAs": ["https://github.com/lpeixin"],
+  "knowsAbout": ["AI Agents", "Model Context Protocol", "Agent Skills", "Python", "LangChain", "Swift", "SwiftUI", "Quantitative Research"]
+}
+</script>
+
+<!-- 首屏防闪：在 CSS 生效前就把主题与语言定下来（此处内联是刻意的，不要外移）
+     ?lang=zh|en 与 ?theme=light|dark 可以覆盖默认值，方便分享指定语言的链接 -->
+<script>
+(function () {
+  try {
+    var q = new URLSearchParams(location.search);
+
+    var t = q.get('theme') || localStorage.getItem('site-theme');
+    if (t !== 'light' && t !== 'dark') {
+      t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.dataset.theme = t;
+
+    var l = q.get('lang') || localStorage.getItem('site-lang');
+    if (l !== 'zh' && l !== 'en') {
+      l = (navigator.language || 'zh').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
+    }
+    document.documentElement.dataset.lang = l;
+    document.documentElement.lang = l === 'zh' ? 'zh-Hans' : 'en';
+  } catch (e) {}
+})();
+</script>
+</head>
+
+<body>
+<a class="skip-link" href="#main">跳到主要内容 / Skip to content</a>
+
+<header class="hdr" id="hdr">
+  <div class="wrap hdr__in">
+    <a class="brand" href="#top" aria-label="Peixin Liu">
+      <span class="brand__mark" aria-hidden="true">PL</span>
+      <span class="brand__text">
+        <strong>Peixin Liu</strong>
+        <em data-t="brand.sub"></em>
+      </span>
+    </a>
+
+    <nav class="nav" id="nav" aria-label="主导航"></nav>
+
+    <div class="hdr__tools">
+      <button class="icobtn" id="langToggle" type="button" aria-label="切换语言 / Switch language">
+        <span class="icobtn__label" id="langLabel">EN</span>
+      </button>
+      <button class="icobtn icobtn--icon" id="themeToggle" type="button" aria-label="切换主题 / Toggle theme">
+        <svg class="ico ico--sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.6M12 18.8v2.6M2.6 12h2.6M18.8 12h2.6M5.4 5.4l1.8 1.8M16.8 16.8l1.8 1.8M18.6 5.4l-1.8 1.8M7.2 16.8l-1.8 1.8"/></svg>
+        <svg class="ico ico--moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5a8.6 8.6 0 1 0 10.8 10.8Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="hdr__progress" id="hdrProgress" aria-hidden="true"></div>
+</header>
+
+<main id="main">
+  <!-- 所有板块由 assets/js/main.js 渲染，内容来自 assets/js/content.js -->
+  <noscript>
+    <div class="wrap" style="padding:64px 0">
+      <h1>Peixin Liu</h1>
+      <p>Software Engineer · AI Agent Developer</p>
+      <p>
+        <a href="https://github.com/lpeixin">GitHub</a> ·
+        <!--<a href="mailto:"></a> -->
+      </p>
+      <p>这个站点需要 JavaScript 才能完整显示。 / This site needs JavaScript to render fully.</p>
+    </div>
+  </noscript>
+</main>
+
+<footer class="ftr" id="contact"></footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="assets/js/content.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>
