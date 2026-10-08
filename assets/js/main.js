@@ -44,7 +44,9 @@
     out: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 15.5 19 5M14.4 5H19v4.6M18 14v4.4a1.6 1.6 0 0 1-1.6 1.6H5.6A1.6 1.6 0 0 1 4 18.4V7.6A1.6 1.6 0 0 1 5.6 6H10"/></svg>',
     pin: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.4s6.6-6 6.6-11a6.6 6.6 0 1 0-13.2 0c0 5 6.6 11 6.6 11Z"/><circle cx="12" cy="10.2" r="2.4"/></svg>',
     star: '<svg class="ico ico--fill" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9Z"/></svg>',
-    copy: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11.4" height="11.4" rx="2.2"/><path d="M15 6.2A2.2 2.2 0 0 0 12.8 4H5.8A2.2 2.2 0 0 0 3.6 6.2v7A2.2 2.2 0 0 0 5.8 15.4"/></svg>'
+    copy: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11.4" height="11.4" rx="2.2"/><path d="M15 6.2A2.2 2.2 0 0 0 12.8 4H5.8A2.2 2.2 0 0 0 3.6 6.2v7A2.2 2.2 0 0 0 5.8 15.4"/></svg>',
+    doc: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.4h8.5L19 7.9v12.7H6Z"/><path d="M14 3.4v4.8h4.8"/><path d="M9 12.5h6M9 15.5h6"/></svg>',
+    arrow: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M12.5 6l5.5 6-5.5 6"/></svg>'
   };
 
   /* ── 首屏数字（可被 GitHub API 覆盖） ───────────────────────────────────── */
@@ -226,24 +228,33 @@
     var u = UI();
     return '<div class="slot reveal">' +
       '<span class="slot__plus">+</span>' +
-      '<span class="slot__label">note-' + String(i + 1).padStart(2, '0') + ' · ' + esc(u.slotLabel) + '</span>' +
+      '<span class="slot__label">' + esc(u.slotLabel) + '</span>' +
       '<span class="slot__hint">' + esc(hint || u.slotHint) + '</span>' +
     '</div>';
   }
 
   function renderNotes() {
     var N = S.notes;
+    var u = UI();
+
     var real = (N.items || []).map(function (it) {
-      return '<a class="card reveal" href="' + esc(it.url) + '" target="_blank" rel="noopener">' +
+      var url = it.url || '';
+      var external = /^https?:\/\//i.test(url) || /^mailto:/i.test(url);
+      // 内部子页面在同标签打开，外部链接新开
+      var target = external ? ' target="_blank" rel="noopener"' : '';
+      var foot = [];
+      if (it.count != null) foot.push('<span class="card__stat">' + ICON.doc + esc(it.count) + ' ' + esc(u.notesCountUnit) + '</span>');
+      if (it.date) foot.push('<span class="mono">' + esc(it.date) + '</span>');
+      return '<a class="card reveal" href="' + esc(url) + '"' + target + '>' +
         '<div class="card__top">' +
           '<span class="card__name">' + esc(pick(it.title)) + '</span>' +
-          '<span class="card__arrow">' + ICON.out + '</span>' +
+          '<span class="card__arrow">' + (external ? ICON.out : ICON.arrow) + '</span>' +
         '</div>' +
-        (it.summary ? '<p class="card__desc">' + esc(pick(it.summary)) + '</p>' : '<p class="card__desc"></p>') +
+        '<p class="card__desc">' + esc(pick(it.summary)) + '</p>' +
         (it.tags && it.tags.length
           ? '<div class="tags">' + it.tags.map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join('') + '</div>'
           : '') +
-        '<div class="card__foot"><span class="mono">' + esc(it.date) + '</span></div>' +
+        (foot.length ? '<div class="card__foot">' + foot.join('') + '</div>' : '') +
       '</a>';
     }).join('');
 

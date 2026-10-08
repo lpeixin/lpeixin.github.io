@@ -56,8 +56,9 @@ window.SITE = {
       moreReposAlt: "More repositories",
       seeAll:       "在 GitHub 上查看全部 {n} 个公开仓库",
       ossNote:      "GitHub Pull Shark ×2 —— 有已合并进上游的 Pull Request。",
-      slotLabel:    "待补充",
-      slotHint:     "这个位置留给你自己：在 content.js 里加一条就会出现在这里。",
+      slotLabel:    "继续添加",
+      slotHint:     "下一步：在 content.js 的 notes.items 里加一条，并复制 notes/fde/ 目录建新子页面。",
+      notesCountUnit: "篇文档",
       slotPrTitle:  "已合并的 PR",
       slotPrDesc:   "把你提交并被合并的 Pull Request 链接补充在这里。",
       builtWith:    "手写 HTML / CSS / JavaScript",
@@ -83,8 +84,9 @@ window.SITE = {
       moreReposAlt: "更多仓库",
       seeAll:       "See all {n} public repositories on GitHub",
       ossNote:      "GitHub Pull Shark ×2 — pull requests merged upstream.",
-      slotLabel:    "Empty slot",
-      slotHint:     "Reserved for you: add one entry in content.js and it shows up here.",
+      slotLabel:    "Add more",
+      slotHint:     "Next: add an entry to notes.items in content.js and copy the notes/fde/ folder to create a new sub-page.",
+      notesCountUnit: "docs",
       slotPrTitle:  "Merged pull requests",
       slotPrDesc:   "Drop links to the pull requests you submitted and got merged.",
       builtWith:    "Hand-written HTML / CSS / JavaScript",
@@ -305,18 +307,42 @@ window.SITE = {
   },
 
   /* ──────────────────────────────────────────────────────────────────────────
-   * 07. 学习笔记 —— 现在全是占位槽。
-   *     加一条真实笔记：把下面 slots 数组里的对象换成这个形状即可
-   *     { date: "2026-10", title: { zh: "…", en: "…" }, url: "https://…", tags: ["MCP"] }
+   * 07. 学习笔记 —— 每个条目都是一个「文档子页面」的入口。
+   *     子页面用 Docsify 构建，放在 notes/<站点名>/ 目录下，形如：
+   *       notes/fde/index.html  →  https://lpeixin.github.io/notes/fde/#/
+   *     加一个子页面入口：往 items 数组里加一个对象即可（见下面的形状）。
+   *     形状：
+   *       {
+   *         title:   { zh: "…", en: "…" },      // 子页面名称
+   *         summary: { zh: "…", en: "…" },      // 一句话简介
+   *         url:     "notes/xxx/index.html",    // 相对路径=同标签打开；http(s)://=新标签打开
+   *         count:   12,                        // 可选：文档篇数，显示在卡片底部
+   *         date:    "2026-10",                 // 可选：最近更新月份
+   *         tags:    ["MCP", "Agent"]           // 可选：主题标签
+   *       }
+   *     想新建一个子页面：复制 notes/fde/ 整个目录改名为 notes/<新站点>/，
+   *     编辑其中的 _sidebar.md 与 markdown 文件，再回到这里加一条入口即可。
    * ──────────────────────────────────────────────────────────────────────── */
   notes: {
     title: { zh: "学习笔记", en: "Notes" },
     lede: {
-      zh: "读源码、跑实验、踩完坑之后写下来的东西。散落在各处的笔记正在往这里搬。",
-      en: "Written after reading source, running experiments and hitting walls. Scattered notes are being consolidated here."
+      zh: "把读源码、跑实验、踩完坑之后写下来的东西，整理成可以分享的文档站。每个卡片是一个独立的子页面，点进去就是一整套笔记。",
+      en: "Notes distilled from reading source, running experiments and hitting walls — packaged as shareable documentation sites. Each card is its own sub-site."
     },
-    items: [],          // ← 真实的笔记条目放这里（见上方注释的形状）
-    slotCount: 3        // ← 空的时候显示几个占位槽
+    items: [
+      {
+        title:   { zh: "FDE 知识库", en: "FDE Knowledge Base" },
+        summary: {
+          zh: "AI 前线部署工程师的学习与面试笔记：角色认知、交付方法论、AI 落地与行业案例。这是一个 Docsify 模板子页面，直接替换内容即可。",
+          en: "A Docsify starter: forward-deployed engineer notes on role, delivery methodology, AI rollout and industry cases. Swap in your own content."
+        },
+        url:     "notes/fde/index.html",
+        count:   6,
+        date:    "2026-10",
+        tags:    ["Docsify", "AI", "模板"]
+      }
+    ],
+    slotCount: 2        // ← 空槽数量：提示「还可以继续添加更多子页面」
   },
 
   /* ──────────────────────────────────────────────────────────────────────────

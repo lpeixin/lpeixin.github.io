@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>笔记知识库 — Docsify 模板</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="description" content="一个可以直接复制、填充内容的文档型知识库子页面模板：侧边栏导航、全文搜索、上一页/下一页、代码高亮、Mermaid 图表与公式。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+
+  <!-- Docsify 主题：vue（浅色）。深色模式由下面的 docsify-themeable 覆盖样式实现 -->
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css" />
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+
+  <style>
+    :root {
+      --theme-color: #0f766e;   /* 与主页强调色一致的 teal */
+      --content-max: 860px;
+    }
+    .app-name-link img { max-height: 28px; }
+    .markdown-section { max-width: var(--content-max); }
+    .sidebar-nav ul li strong { color: var(--theme-color); }
+    .sidebar-nav > ul > li > a { font-weight: 600; }
+    .markdown-section .mermaid {
+      text-align: center;
+      overflow-x: auto;
+      margin: 1em 0;
+    }
+    /* 顶部主题切换按钮 */
+    .theme-toggle {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 40;
+      width: 40px; height: 40px;
+      border: 1px solid rgba(0,0,0,.12);
+      border-radius: 50%;
+      background: #fff;
+      color: #444;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      box-shadow: 0 4px 14px rgba(0,0,0,.12);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .theme-toggle:hover { border-color: var(--theme-color); color: var(--theme-color); }
+
+    /* 深色模式：body[data-theme="dark"] 时覆写关键配色 */
+    body[data-theme="dark"] {
+      background: #0f1419;
+      color: #c9d1d9;
+    }
+    body[data-theme="dark"] .sidebar,
+    body[data-theme="dark"] .sidebar-nav > ul { background: #0f1419; border-right-color: #1f2630; }
+    body[data-theme="dark"] .sidebar a { color: #8b98a5; }
+    body[data-theme="dark"] .sidebar li.active > a { color: var(--theme-color); }
+    body[data-theme="dark"] .content,
+    body[data-theme="dark"] .markdown-section { background: #0f1419; color: #c9d1d9; }
+    body[data-theme="dark"] .markdown-section a { color: #56d4c8; }
+    body[data-theme="dark"] .markdown-section h1,
+    body[data-theme="dark"] .markdown-section h2,
+    body[data-theme="dark"] .markdown-section h3,
+    body[data-theme="dark"] .markdown-section h4 { color: #e6edf3; border-bottom-color: #1f2630; }
+    body[data-theme="dark"] .markdown-section code,
+    body[data-theme="dark"] .markdown-section pre { background: #161b22; color: #e6edf3; }
+    body[data-theme="dark"] .markdown-section pre > code { background: #161b22; }
+    body[data-theme="dark"] .app-name,
+    body[data-theme="dark"] .app-name-link { color: #e6edf3; }
+    body[data-theme="dark"] .search input { background: #161b22; color: #e6edf3; border-color: #1f2630; }
+    body[data-theme="dark"] blockquote { background: rgba(255,255,255,.04); color: #9aa4b2; }
+    body[data-theme="dark"] table th { background: #161b22; }
+    body[data-theme="dark"] table th,
+    body[data-theme="dark"] table td { border-color: #1f2630; }
+    body[data-theme="dark"] .theme-toggle { background: #161b22; color: #c9d1d9; border-color: #1f2630; }
+    body[data-theme="dark"] .anchor { color: var(--theme-color); }
+    body[data-theme="dark"] .mermaid { background: #0f1419; }
+  </style>
+</head>
+<body>
+  <div id="app">加载中…</div>
+
+  <button class="theme-toggle" id="themeToggle" type="button" title="切换深浅色 / Toggle theme" aria-label="切换主题">◐</button>
+
+  <!-- 首屏防闪：尽早定下主题 -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('docs-theme');
+        if (t !== 'light' && t !== 'dark') {
+          t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.body.dataset.theme = t;
+      } catch (e) { document.body.dataset.theme = 'light'; }
+    })();
+  </script>
+
+  <!-- Docsify 暂不支持 Mermaid 异步渲染，官方文档建议锁定到 v9.3.0 -->
+  <script src="//cdn.jsdelivr.net/npm/mermaid@9.3.0/dist/mermaid.min.js"></script>
+  <script>
+    var mermaidId = 0;
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'neutral' });
+  </script>
+
+  <script>
+    window.$docsify = {
+      name: '笔记知识库',                 // ← 改成你自己的知识库名称
+      repo: 'https://github.com/lpeixin/lpeixin.github.io', // ← 改成对应仓库，或删除此行
+      loadSidebar: true,
+      subMaxLevel: 3,
+      auto2top: true,
+      homepage: 'README.md',
+      onlyCover: false,
+      maxLevel: 4,
+      themeColor: '#0f766e',
+
+      search: {
+        placeholder: '搜索文档',
+        noData: '未找到结果',
+        path: 'auto',
+        depth: 4
+      },
+
+      alias: {
+        '/.*/_sidebar.md': '/_sidebar.md'
+      },
+
+      pagination: {
+        previousText: '上一篇',
+        nextText: '下一篇',
+        crossChapter: true,
+        crossChapterText: true
+      },
+
+      // 让 ```mermaid 代码块渲染成图
+      markdown: {
+        renderer: {
+          code: function (code, lang) {
+            if (lang === 'mermaid') {
+              return '<div class="mermaid">' + mermaid.render('mermaid-svg-' + mermaidId++, code) + '</div>';
+            }
+            return this.origin.code.apply(this, arguments);
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- KaTeX：引擎 + mhchem + 官方 auto-render，需在 docsify 核心之前就绪，
+       配合下面 $docsify.hooks.doneEach 渲染公式 -->
+  <script src="//cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/mhchem.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+
+  <script src="//cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify-pagination@2/dist/docsify-pagination.min.js"></script>
+
+  <!-- 常用语言的代码高亮，可按需增删 -->
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-python.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-javascript.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-java.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-swift.min.js"></script>
+
+  <!-- 交互增强 -->
+  <script src="//cdn.jsdelivr.net/npm/docsify@4/lib/plugins/zoom-image.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify-copy-code@2/dist/docsify-copy-code.min.js"></script>
+
+  <script>
+    // 主题切换：仅切换 body 上的 data-theme，并记忆选择
+    (function () {
+      var btn = document.getElementById('themeToggle');
+      btn.addEventListener('click', function () {
+        var next = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.body.dataset.theme = next;
+        try { localStorage.setItem('docs-theme', next); } catch (e) {}
+      });
+    })();
+
+    // KaTeX 公式渲染：用 MutationObserver 监听正文容器变化，
+    // 比 docsify 的 doneEach 更可靠（直接以 hash 打开首屏也能触发）。
+    (function () {
+      function renderMath() {
+        var el = document.querySelector('.markdown-section');
+        if (!el || !window.renderMathInElement) return;
+        window.renderMathInElement(el, {
+          delimiters: [
+            { left: '$$',  right: '$$',  display: true  },
+            { left: '\\[', right: '\\]', display: true  },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '$',   right: '$',   display: false }
+          ],
+          ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+          throwOnError: false
+        });
+      }
+      var timer;
+      function schedule() { clearTimeout(timer); timer = setTimeout(renderMath, 0); }
+      function start() {
+        var el = document.querySelector('.markdown-section');
+        if (!el) { setTimeout(start, 50); return; }
+        new MutationObserver(schedule).observe(el, { childList: true, subtree: true });
+        renderMath();
+      }
+      start();
+    })();
+  </script>
+</body>
+</html>
