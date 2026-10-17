@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<title>AppPocket — Every app on your Mac, sorted the way you think</title>
+<meta name="description" content="AppPocket is a local-only application launcher for macOS 26, where Launchpad is no longer with us. No account, no network, no analytics. Smart categories, drag-and-drop and live app monitoring. Open source, MIT.">
+<meta name="author" content="Peixin Liu">
+<meta name="color-scheme" content="dark">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="AppPocket — a local-only launcher for macOS 26">
+<meta property="og:description" content="Every app on your Mac, sorted the way you think. No account, no network, no analytics. Open source under MIT.">
+<meta property="og:url" content="https://lpeixin.github.io/apps/apppocket/">
+<meta property="og:image" content="https://lpeixin.github.io/apps/apppocket/assets/img/banner-en.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="canonical" href="https://lpeixin.github.io/apps/apppocket/">
+<link rel="icon" href="assets/img/appicon-64.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/img/appicon-256.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "AppPocket",
+  "operatingSystem": "macOS 14.0 or later",
+  "applicationCategory": "UtilitiesApplication",
+  "softwareVersion": "1.0.0",
+  "url": "https://github.com/lpeixin/app-pocket",
+  "downloadUrl": "https://github.com/lpeixin/app-pocket/releases/download/v1.0.0/AppPocket-1.0.0.dmg",
+  "image": "https://lpeixin.github.io/apps/apppocket/assets/img/appicon-1024.png",
+  "description": "A local-only application launcher for macOS 26, with smart categories, drag-and-drop assignment and live app monitoring. No account, no network, no analytics.",
+  "license": "https://opensource.org/licenses/MIT",
+  "isAccessibleForFree": true,
+  "author": { "@type": "Person", "name": "Peixin Liu" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+
+<style>
+/* ============================================================
+   AppPocket 产品页 —— 独立样式，不依赖主站
+   配色取自 repo 官方 banner：深色网格底 + 橙色品牌色
+   ============================================================ */
+:root {
+  --bg:        #0c1117;
+  --bg-2:      #0f151d;
+  --surface:   #151d27;
+  --surface-2: #1a232e;
+  --line:      rgba(255, 255, 255, .09);
+  --line-2:    rgba(255, 255, 255, .16);
+
+  --text:      #e9eef4;
+  --text-2:    #a3b0be;
+  --text-3:    #6f7f8f;
+
+  --brand:     #f0873c;
+  --brand-hi:  #ffa45c;
+  --brand-dim: rgba(240, 135, 60, .14);
+  --blue:      #4c8dff;
+
+  --radius:    14px;
+  --radius-sm: 10px;
+  --wrap:      1120px;
+  --ease:      cubic-bezier(.22, .61, .36, 1);
+
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+          Roboto, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB",
+          "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+code { overflow-wrap: anywhere; }
+
+.wrap { width: 100%; max-width: var(--wrap); margin-inline: auto; padding-inline: 22px; }
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0;
+  background: var(--brand); color: #1a1105; padding: 10px 16px;
+  border-radius: 0 0 8px 0; font-weight: 600; z-index: 100;
+}
+.skip-link:focus { left: 0; }
+
+:where(a, button, summary):focus-visible {
+  outline: 2px solid var(--brand-hi);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ── 顶部导航 ─────────────────────────────────────────────── */
+.hdr {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(12, 17, 23, .78);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid transparent;
+  transition: border-color .25s var(--ease), background .25s var(--ease);
+}
+.hdr.is-stuck { border-bottom-color: var(--line); background: rgba(12, 17, 23, .92); }
+
+.hdr__in { display: flex; align-items: center; gap: 16px; min-height: 62px; }
+
+.brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; flex: 0 0 auto; }
+.brand img { width: 30px; height: 30px; border-radius: 7px; display: block; }
+.brand b { font-size: 16.5px; font-weight: 650; letter-spacing: -.015em; }
+.brand span { font-size: 11.5px; color: var(--text-3); display: block; line-height: 1.1; font-weight: 500; }
+
+.nav { display: flex; gap: 4px; margin-left: auto; }
+.nav a {
+  text-decoration: none; color: var(--text-2); font-size: 14px; font-weight: 500;
+  padding: 8px 12px; border-radius: 8px; transition: color .18s, background .18s;
+}
+.nav a:hover { color: var(--text); background: rgba(255, 255, 255, .05); }
+
+.hdr__actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+
+.langbtn {
+  font-family: inherit; font-size: 13px; font-weight: 650; letter-spacing: .02em;
+  color: var(--text-2); background: transparent;
+  border: 1px solid var(--line-2); border-radius: 8px;
+  padding: 7px 11px; cursor: pointer; transition: color .18s, border-color .18s;
+  min-width: 46px;
+}
+.langbtn:hover { color: var(--text); border-color: var(--brand); }
+
+.iconbtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px;
+  border: 1px solid var(--line-2); background: transparent; color: var(--text-2);
+  cursor: pointer; text-decoration: none; transition: color .18s, border-color .18s;
+}
+.iconbtn:hover { color: var(--text); border-color: var(--brand); }
+.iconbtn svg { width: 18px; height: 18px; fill: currentColor; }
+
+/* ── 按钮 ─────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: inherit; font-size: 14.5px; font-weight: 620; letter-spacing: -.01em;
+  text-decoration: none; cursor: pointer;
+  padding: 11px 19px; border-radius: 10px; border: 1px solid transparent;
+  transition: transform .16s var(--ease), background .18s, border-color .18s, box-shadow .18s;
+  white-space: nowrap;
+}
+.btn svg { width: 16px; height: 16px; flex: 0 0 auto; }
+.btn--primary {
+  background: linear-gradient(180deg, var(--brand-hi), var(--brand));
+  color: #23150a;
+  box-shadow: 0 6px 22px rgba(240, 135, 60, .28), inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+.btn--primary:hover { transform: translateY(-1px); box-shadow: 0 10px 30px rgba(240, 135, 60, .36), inset 0 1px 0 rgba(255, 255, 255, .35); }
+.btn--ghost { background: rgba(255, 255, 255, .04); color: var(--text); border-color: var(--line-2); }
+.btn--ghost:hover { background: rgba(255, 255, 255, .08); border-color: var(--brand); }
+.btn--sm { padding: 8px 14px; font-size: 13.5px; border-radius: 9px; }
+.btn--block { width: 100%; }
+
+/* ── Hero ─────────────────────────────────────────────────── */
+.hero {
+  position: relative; overflow: hidden;
+  padding: clamp(48px, 8vw, 92px) 0 clamp(40px, 6vw, 72px);
+  background:
+    radial-gradient(920px 460px at 14% -8%, rgba(240, 135, 60, .17), transparent 62%),
+    radial-gradient(760px 420px at 92% 4%, rgba(76, 141, 255, .10), transparent 60%),
+    linear-gradient(180deg, var(--bg-2), var(--bg));
+}
+/* 科技感网格，向四周淡出 */
+.hero::before {
+  content: ""; position: absolute; inset: -2px 0 auto; height: 100%;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .05) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(760px 520px at 30% 0%, #000 0%, transparent 78%);
+          mask-image: radial-gradient(760px 520px at 30% 0%, #000 0%, transparent 78%);
+  pointer-events: none;
+}
+.hero__in {
+  position: relative; display: grid; gap: clamp(34px, 5vw, 60px);
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr); align-items: center;
+}
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  letter-spacing: .13em; text-transform: uppercase; color: var(--brand-hi);
+  margin: 0 0 18px;
+}
+.eyebrow::before {
+  content: ""; width: 22px; height: 1px; background: var(--brand); flex: 0 0 auto;
+}
+
+.hero h1 {
+  margin: 0 0 6px; font-size: clamp(42px, 6.4vw, 66px);
+  line-height: 1.03; letter-spacing: -.035em; font-weight: 700;
+}
+.hero h1 .v {
+  display: inline-block; vertical-align: middle; margin-left: 12px;
+  font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0;
+  color: var(--brand-hi); background: var(--brand-dim);
+  border: 1px solid rgba(240, 135, 60, .32); border-radius: 999px; padding: 4px 10px;
+}
+.hero__tag {
+  margin: 14px 0 0; font-size: clamp(18px, 2.3vw, 23px); line-height: 1.42;
+  letter-spacing: -.018em; font-weight: 600; color: var(--text);
+}
+.hero__lead { margin: 14px 0 0; max-width: 54ch; color: var(--text-2); font-size: 15.5px; }
+
+.pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; padding: 0; list-style: none; }
+.pill {
+  font-size: 12.5px; font-weight: 550; color: var(--text-2);
+  border: 1px solid var(--line-2); border-radius: 999px; padding: 5px 12px;
+  background: rgba(255, 255, 255, .03);
+}
+.pill b { color: var(--brand-hi); font-weight: 700; margin-right: 5px; }
+
+.hero__cta { display: flex; flex-wrap: wrap; gap: 11px; margin: 28px 0 0; }
+.hero__meta {
+  display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 20px 0 0;
+  font-family: var(--mono); font-size: 12px; color: var(--text-3);
+}
+.hero__meta span { display: inline-flex; align-items: center; gap: 7px; }
+.hero__meta i { width: 5px; height: 5px; border-radius: 50%; background: var(--brand); flex: 0 0 auto; }
+
+/* 应用截图窗口框 */
+.shot { position: relative; }
+.shot__glow {
+  position: absolute; inset: 12% -6% -12% -6%; z-index: 0;
+  background: radial-gradient(60% 60% at 50% 45%, rgba(240, 135, 60, .30), transparent 72%);
+  filter: blur(34px); pointer-events: none;
+}
+.window {
+  position: relative; z-index: 1;
+  border: 1px solid var(--line-2); border-radius: var(--radius);
+  background: var(--surface-2); overflow: hidden;
+  box-shadow: 0 30px 70px -20px rgba(0, 0, 0, .75), 0 0 0 1px rgba(0, 0, 0, .35);
+}
+.window__bar {
+  display: flex; align-items: center; gap: 7px; padding: 10px 13px;
+  background: linear-gradient(180deg, #232c37, #1b2430);
+  border-bottom: 1px solid rgba(0, 0, 0, .4);
+}
+.window__bar i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+.window__bar i:nth-child(1) { background: #ff5f57; }
+.window__bar i:nth-child(2) { background: #febc2e; }
+.window__bar i:nth-child(3) { background: #28c840; }
+.window__bar em {
+  margin-left: auto; font-style: normal; font-family: var(--mono);
+  font-size: 11px; color: var(--text-3);
+}
+.window img { width: 100%; height: auto; display: block; }
+.shot__hint {
+  position: absolute; right: 10px; bottom: 10px; z-index: 2;
+  font-family: var(--mono); font-size: 10.5px; color: #fff;
+  background: rgba(0, 0, 0, .55); border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 7px; padding: 4px 9px; opacity: 0; transition: opacity .2s;
+  pointer-events: none;
+}
+.window:hover .shot__hint, .window:focus-within .shot__hint { opacity: 1; }
+.zoombtn { position: absolute; inset: 0; z-index: 2; border: 0; background: transparent; cursor: zoom-in; }
+
+/* ── 通用板块 ─────────────────────────────────────────────── */
+.sec { padding: clamp(52px, 8vw, 92px) 0; border-top: 1px solid var(--line); }
+.sec--flush { border-top: 0; padding-top: 0; }
+.sec--alt { background: linear-gradient(180deg, var(--bg-2), var(--bg)); }
+
+.sec-head { max-width: 68ch; margin: 0 0 clamp(28px, 4vw, 44px); }
+.sec-head .kicker {
+  font-family: var(--mono); font-size: 11.5px; font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--brand); margin: 0 0 10px;
+}
+.sec-head h2 {
+  margin: 0; font-size: clamp(25px, 3.6vw, 35px); line-height: 1.18;
+  letter-spacing: -.028em; font-weight: 680;
+}
+.sec-head p { margin: 12px 0 0; color: var(--text-2); font-size: 15.5px; max-width: 62ch; }
+
+/* 特性网格 */
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(272px, 1fr)); }
+.feat {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: linear-gradient(180deg, var(--surface), rgba(21, 29, 39, .5));
+  padding: 22px; transition: border-color .2s, transform .2s var(--ease), background .2s;
+}
+.feat:hover { border-color: var(--line-2); transform: translateY(-2px); }
+.feat__ico {
+  width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center;
+  background: var(--brand-dim); border: 1px solid rgba(240, 135, 60, .28); color: var(--brand-hi);
+  margin-bottom: 15px;
+}
+.feat__ico svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.feat h3 { margin: 0 0 7px; font-size: 16.5px; letter-spacing: -.015em; font-weight: 640; }
+.feat p { margin: 0; color: var(--text-2); font-size: 14.5px; line-height: 1.62; }
+.feat code { font-family: var(--mono); font-size: 12.5px; background: rgba(255, 255, 255, .06); padding: 1px 5px; border-radius: 5px; color: var(--text); }
+
+/* 官方 banner 带 */
+.band { padding: clamp(40px, 6vw, 66px) 0; border-top: 1px solid var(--line); }
+.band__fig { position: relative; margin: 0; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line-2); box-shadow: 0 24px 60px -24px rgba(0, 0, 0, .8); }
+.band__fig img { width: 100%; height: auto; display: block; }
+.band figcaption, .band__fig figcaption {
+  margin-top: 0; padding: 10px 14px;
+  font-family: var(--mono); font-size: 11.5px; color: var(--text-3); text-align: center;
+  background: var(--surface); border-top: 1px solid var(--line);
+}
+
+/* 截图展示 */
+.shots { display: grid; gap: clamp(22px, 4vw, 40px); align-items: start; }
+.shot-card { margin: 0; }
+.shot-card .window { margin-bottom: 16px; }
+.shot-card h3 { margin: 0 0 6px; font-size: 18px; letter-spacing: -.018em; }
+.shot-card p { margin: 0; color: var(--text-2); font-size: 14.5px; max-width: 62ch; }
+
+/* 本地优先 */
+.duo { display: grid; gap: clamp(26px, 4vw, 52px); grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); align-items: start; }
+.factlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.factlist li {
+  display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: start;
+  padding: 13px 0; border-bottom: 1px solid var(--line);
+}
+.factlist li:last-child { border-bottom: 0; }
+.factlist svg { width: 17px; height: 17px; margin-top: 4px; fill: none; stroke: var(--brand); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.factlist b { display: block; font-size: 15px; font-weight: 620; margin-bottom: 2px; }
+.factlist span { color: var(--text-2); font-size: 14px; line-height: 1.6; }
+
+.codecard {
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: #0a0e13; overflow: hidden;
+}
+.codecard__bar {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, .02);
+  font-family: var(--mono); font-size: 11.5px; color: var(--text-3);
+}
+.codecard__bar .tag { margin-left: auto; color: var(--brand-hi); }
+.codecard pre {
+  margin: 0; padding: 16px; overflow-x: auto;
+  font-family: var(--mono); font-size: 12.8px; line-height: 1.75; color: #d7e0ea;
+}
+.codecard pre .c { color: #5f7285; }
+.codecard pre .p { color: var(--brand-hi); }
+.codecard pre .s { color: #79c0ff; }
+
+/* 快捷键表 */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 460px; }
+th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+thead th {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-3); font-weight: 600; background: rgba(255, 255, 255, .025);
+}
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: rgba(255, 255, 255, .025); }
+kbd {
+  font-family: var(--mono); font-size: 12px; color: var(--text);
+  background: linear-gradient(180deg, #2b3542, #212a35);
+  border: 1px solid var(--line-2); border-bottom-width: 2px;
+  border-radius: 6px; padding: 2px 7px; white-space: nowrap;
+}
+
+/* 安装 / 下载 */
+.dl {
+  border: 1px solid rgba(240, 135, 60, .3); border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(240, 135, 60, .10), rgba(240, 135, 60, .02));
+  padding: clamp(22px, 3.4vw, 30px);
+}
+.dl__row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.dl__file { font-family: var(--mono); font-size: 13px; color: var(--text-2); }
+.dl__file b { color: var(--text); font-weight: 600; }
+.dl .btn { margin-left: auto; }
+
+.specs { display: grid; gap: 1px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-top: 16px; }
+.specs div { background: var(--surface); padding: 14px 16px; }
+.specs dt { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
+.specs dd { margin: 0; font-size: 14.5px; font-weight: 600; }
+
+.steps { counter-reset: s; list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start; }
+.steps li::before {
+  content: counter(s); font-family: var(--mono); font-size: 13px; font-weight: 700;
+  color: var(--brand-hi); background: var(--brand-dim);
+  border: 1px solid rgba(240, 135, 60, .3); border-radius: 9px;
+  width: 34px; height: 34px; display: grid; place-items: center;
+}
+.steps li > div > b { display: block; font-size: 15.5px; font-weight: 620; margin-bottom: 3px; }
+.steps p { margin: 0; color: var(--text-2); font-size: 14.5px; }
+.steps code { font-family: var(--mono); font-size: 12.5px; background: rgba(255, 255, 255, .07); padding: 1.5px 6px; border-radius: 5px; }
+
+.note {
+  display: grid; grid-template-columns: 20px 1fr; gap: 12px; align-items: start;
+  border: 1px solid var(--line-2); border-left: 3px solid var(--brand);
+  border-radius: var(--radius-sm); background: rgba(255, 255, 255, .03);
+  padding: 16px 18px; margin-top: 18px;
+}
+.note svg { width: 18px; height: 18px; margin-top: 3px; fill: none; stroke: var(--brand); stroke-width: 1.8; stroke-linecap: round; }
+.note p { margin: 0; font-size: 14.5px; color: var(--text-2); }
+.note p + p { margin-top: 9px; }
+.note code { font-family: var(--mono); font-size: 12.5px; color: var(--text); background: rgba(0, 0, 0, .4); border: 1px solid var(--line); padding: 2px 7px; border-radius: 5px; }
+.copybtn {
+  margin-top: 9px; font-family: inherit; font-size: 12.5px; font-weight: 600;
+  color: var(--text-2); background: transparent; border: 1px solid var(--line-2);
+  border-radius: 7px; padding: 5px 11px; cursor: pointer; transition: color .18s, border-color .18s;
+}
+.copybtn:hover { color: var(--brand-hi); border-color: var(--brand); }
+
+/* FAQ */
+.faq { border-top: 1px solid var(--line); }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary {
+  list-style: none; cursor: pointer; padding: 18px 40px 18px 0; position: relative;
+  font-size: 16px; font-weight: 600; letter-spacing: -.012em; transition: color .18s;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary:hover { color: var(--brand-hi); }
+.faq summary::after {
+  content: "+"; position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  font-family: var(--mono); font-size: 19px; color: var(--text-3); transition: color .2s, transform .2s;
+}
+.faq details[open] summary::after { color: var(--brand); transform: translateY(-50%) rotate(45deg); }
+.faq__body { padding: 0 0 20px; color: var(--text-2); font-size: 15px; max-width: 76ch; }
+.faq__body p { margin: 0 0 10px; }
+.faq__body p:last-child { margin-bottom: 0; }
+.faq__body code { font-family: var(--mono); font-size: 12.8px; background: rgba(255, 255, 255, .07); padding: 1.5px 6px; border-radius: 5px; color: var(--text); }
+.faq__body a { color: var(--brand-hi); text-decoration: underline; text-underline-offset: 3px; }
+
+/* CTA 收尾 */
+.closer {
+  text-align: center; padding: clamp(52px, 8vw, 88px) 0;
+  background:
+    radial-gradient(680px 300px at 50% 0%, rgba(240, 135, 60, .16), transparent 70%),
+    var(--bg);
+  border-top: 1px solid var(--line);
+}
+.closer h2 { margin: 0; font-size: clamp(24px, 3.6vw, 34px); letter-spacing: -.028em; }
+.closer p { margin: 12px auto 26px; color: var(--text-2); max-width: 52ch; font-size: 15.5px; }
+.closer__btns { display: flex; flex-wrap: wrap; gap: 11px; justify-content: center; }
+
+/* 页脚 */
+.ftr { border-top: 1px solid var(--line); padding: 30px 0 40px; background: var(--bg); }
+.ftr__in { display: flex; flex-wrap: wrap; gap: 16px 26px; align-items: center; font-size: 13.5px; color: var(--text-3); }
+.ftr__links { display: flex; flex-wrap: wrap; gap: 18px; margin-left: auto; }
+.ftr a { color: var(--text-3); text-decoration: none; transition: color .18s; }
+.ftr a:hover { color: var(--brand-hi); }
+
+/* 灯箱 */
+.lb {
+  position: fixed; inset: 0; z-index: 90; display: none;
+  background: rgba(6, 9, 13, .92); backdrop-filter: blur(6px);
+  padding: 24px; place-items: center; cursor: zoom-out;
+}
+.lb.is-open { display: grid; }
+.lb img { max-width: min(1400px, 96vw); max-height: 92vh; width: auto; height: auto;
+  border-radius: var(--radius); border: 1px solid var(--line-2); box-shadow: 0 30px 80px rgba(0, 0, 0, .8); }
+.lb__close {
+  position: absolute; top: 18px; right: 18px; width: 40px; height: 40px; border-radius: 10px;
+  border: 1px solid var(--line-2); background: rgba(255, 255, 255, .06); color: var(--text);
+  font-size: 20px; cursor: pointer; line-height: 1;
+}
+
+/* 出现动画 */
+.rise { opacity: 0; transform: translateY(16px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+.rise.in { opacity: 1; transform: none; }
+
+/* ── 自适应 ───────────────────────────────────────────────── */
+@media (max-width: 1000px) {
+  .hero__in { grid-template-columns: 1fr; }
+  .hero__in .shot { order: 2; max-width: 860px; }
+  .duo { grid-template-columns: 1fr; }
+  .band__fig img { min-height: 0; }
+}
+
+@media (max-width: 860px) {
+  .nav { display: none; }
+  .hdr__in { min-height: 58px; }
+  .brand span { display: none; }
+}
+
+@media (max-width: 620px) {
+  body { font-size: 15.5px; }
+  .wrap { padding-inline: 16px; }
+  .hero { padding-top: 34px; }
+  .hero__cta .btn { flex: 1 1 100%; }
+  .dl .btn { margin-left: 0; flex: 1 1 100%; }
+  .dl__row { gap: 12px; }
+  .shots { gap: 30px; }
+  .ftr__links { margin-left: 0; }
+  .window__bar em { display: none; }
+  table { min-width: 400px; font-size: 14px; }
+  th, td { padding: 10px 13px; }
+}
+
+@media (max-width: 400px) {
+  .brand b { font-size: 15px; }
+  .langbtn { min-width: 40px; padding: 7px 8px; }
+}
+
+/* 尊重「减少动态效果」 */
+@media (prefers-reduced-motion: reduce) {
+  .rise { opacity: 1; transform: none; }
+}
+</style>
+</head>
+
+<body>
+<a class="skip-link" href="#main" data-i18n="skip">跳到主要内容</a>
+
+<!-- ══════════════ 顶部导航 ══════════════ -->
+<header class="hdr" id="hdr">
+  <div class="wrap hdr__in">
+    <a class="brand" href="/" aria-label="AppPocket">
+      <img src="assets/img/appicon-64.png" alt="" width="30" height="30">
+      <span style="display:block">
+        <b>AppPocket</b>
+        <span data-i18n="brand.sub">本地优先的 macOS 启动器</span>
+      </span>
+    </a>
+
+    <nav class="nav" id="nav" aria-label="页面导航">
+      <a href="#features" data-i18n="nav.features">功能</a>
+      <a href="#interface" data-i18n="nav.interface">界面</a>
+      <a href="#local" data-i18n="nav.local">本地优先</a>
+      <a href="#shortcuts" data-i18n="nav.shortcuts">快捷键</a>
+      <a href="#install" data-i18n="nav.install">安装</a>
+      <a href="#faq" data-i18n="nav.faq">FAQ</a>
+    </nav>
+
+    <div class="hdr__actions">
+      <button class="langbtn" id="langToggle" type="button" aria-label="Switch language">中文</button>
+      <a class="iconbtn" href="https://github.com/lpeixin/app-pocket" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.36 1.09 2.93.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.03a9.5 9.5 0 0 1 5 0c1.91-1.3 2.75-1.03 2.75-1.03.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2.2Z"/></svg>
+      </a>
+      <a class="btn btn--primary btn--sm" href="https://github.com/lpeixin/app-pocket/releases/download/v1.0.0/AppPocket-1.0.0.dmg" download>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>
+        <span data-i18n="btn.dl">下载</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ══════════════ Hero ══════════════ -->
+<section class="hero">
+  <div class="wrap hero__in">
+    <div>
+      <p class="eyebrow" data-i18n="hero.eyebrow">macOS 26 · 应用启动器</p>
+      <h1>AppPocket<span class="v">v1.0.0</span></h1>
+      <p class="hero__tag" data-i18n="hero.tag">把 Mac 上的每个应用，按你的想法归类。</p>
+      <p class="hero__lead" data-i18n-html="hero.lead">
+        一个只在你这台机器上运行的应用启动器——macOS 26 里 Launchpad 已经不在了。
+        没有账号、不联网、没有数据统计、没有第三方依赖：它读 <code>Info.plist</code>，写一个 JSON 文件。
+      </p>
+
+      <ul class="pills">
+        <li class="pill"><b>●</b><span data-i18n="hero.p1">本地运行</span></li>
+        <li class="pill"><b>●</b><span data-i18n="hero.p2">无需账号</span></li>
+        <li class="pill"><b>●</b><span data-i18n="hero.p3">不联网</span></li>
+        <li class="pill"><b>●</b><span data-i18n="hero.p4">MIT 开源</span></li>
+      </ul>
+
+      <div class="hero__cta">
+        <a class="btn btn--primary" href="https://github.com/lpeixin/app-pocket/releases/download/v1.0.0/AppPocket-1.0.0.dmg" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>
+          <span data-i18n="btn.dm">下载 DMG · 2.2 MB</span>
+        </a>
+        <a class="btn btn--ghost" href="https://github.com/lpeixin/app-pocket" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.36 1.09 2.93.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.03a9.5 9.5 0 0 1 5 0c1.91-1.3 2.75-1.03 2.75-1.03.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2.2Z"/></svg>
+          <span data-i18n="btn.gh">在 GitHub 上查看</span>
+        </a>
+      </div>
+
+      <p class="hero__meta">
+        <span><i></i><span data-i18n="hero.m1">macOS 14.0 或更高</span></span>
+        <span><i></i><span data-i18n="hero.m2">Apple 芯片与 Intel（通用二进制）</span></span>
+        <span><i></i><span data-i18n="hero.m3">六种界面语言</span></span>
+      </p>
+    </div>
+
+    <figure class="shot rise" style="margin:0">
+      <div class="shot__glow" aria-hidden="true"></div>
+      <div class="window">
+        <div class="window__bar" aria-hidden="true">
+          <i></i><i></i><i></i><em>AppPocket</em>
+        </div>
+        <img src="assets/img/screenshot-main-en.jpg"
+             data-lang-src-en="assets/img/screenshot-main-en.jpg"
+             data-lang-src-zh="assets/img/screenshot-main-zh.jpg"
+             data-alt-en="AppPocket main window: every installed app in a grid, smart groups and custom categories in the sidebar"
+             data-alt-zh="AppPocket 主界面：所有已安装应用排成网格，左侧是智能分组与自定义分类"
+             width="2256" height="1576"
+             alt="AppPocket main window: every installed app in a grid, smart groups and custom categories in the sidebar">
+        <button class="zoombtn" type="button" data-zoom="assets/img/screenshot-main-en.jpg"
+                data-lang-src-en="assets/img/screenshot-main-en.jpg"
+                data-lang-src-zh="assets/img/screenshot-main-zh.jpg"
+                aria-label="放大查看截图"></button>
+        <span class="shot__hint" data-i18n="hero.zoom">点击放大</span>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<!-- ══════════════ 功能 ══════════════ -->
+<section class="sec" id="features">
+  <div class="wrap">
+    <div class="sec-head rise">
+      <p class="kicker" data-i18n="feat.kicker">Features</p>
+      <h2 data-i18n="feat.title">它做什么</h2>
+      <p data-i18n="feat.lede">一个启动器该做的事，做好做透；其余一概不做。</p>
+    </div>
+
+    <div class="grid">
+      <article class="feat rise">
+        <div class="feat__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg></div>
+        <h3 data-i18n="f1.t">全部已安装应用</h3>
+        <p data-i18n-html="f1.d">覆盖 <code>/Applications</code>、<code>/System/Applications</code>、<code>/System/Library/CoreServices/Applications</code> 与 <code>~/Applications</code>，显示真实图标。</p>
+      </article>
+
+      <article class="feat rise">
+        <div class="feat__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18.5" cy="15.5" r="3.5"/><path d="M18.5 13.8v3.4M16.8 15.5h3.4"/></svg></div>
+        <h3 data-i18n="f2.t">四个智能分组</h3>
+        <p data-i18n="f2.d">实时计算而非存储：全部应用、未分类、最近使用、已隐藏。数字永远是准的。</p>
+      </article>
+
+      <article class="feat rise">
+        <div class="feat__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 20 8v8l-8 4.5L4 16V8Z"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <h3 data-i18n="f3.t">你自己的分类</h3>
+        <p data-i18n="f3.d">名称、SF Symbol 图标、颜色，加一份可排序的成员列表。新建、编辑、重命名、复制、拖拽排序、删除。</p>
+      </article>
+
+      <article class="feat rise">
+        <div class="feat__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5v9.5M6 18.5l-3-3M6 18.5l3-3"/><path d="M13 7h8M13 12h8M13 17h5"/></svg></div>
+        <h3 data-i18n="f4.t">拖一下就算归类</h3>
+        <p data-i18n="f4.d">把图标拖到侧栏的分类上、用图标的右键菜单，或者在多选操作栏里批量归到某个分类。</p>
+      </article>
+
+      <article class="feat rise">
+        <div class="feat__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg></div>
+        <h3 data-i18n="f5.t">按相关度排序的搜索</h3>
+        <p data-i18n="f5.d">是打分排序，不是简单的子串过滤。打 <code>Xcode</code> 的前几个字母就能排到前面。</p>
+      </article>
+
+      <article class="feat rise">
+        <div class="feat__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M8 20h8M12 17v3"/><path d="M7.5 9.5h4"/></svg></div>
+        <h3 data-i18n="f6.t">不用回到 Dock</h3>
+        <p data-i18n="f6.d">菜单栏图标常驻，还能设一个全局快捷键随时唤起。⌘W 收起后应用仍在菜单栏运行。</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 官方 banner ══════════════ -->
+<section class="band">
+  <div class="wrap">
+    <figure class="band__fig rise">
+      <img src="assets/img/banner-en.jpg"
+           data-lang-src-en="assets/img/banner-en.jpg"
+           data-lang-src-zh="assets/img/banner-zh.jpg"
+           data-alt-en="AppPocket brand banner — a local-only application launcher for macOS 26"
+           data-alt-zh="AppPocket —— 为 macOS 26 而生的本地应用启动器"
+           width="2560" height="640" loading="lazy"
+           alt="AppPocket brand banner — a local-only application launcher for macOS 26">
+      <figcaption data-i18n="band.cap">AppPocket 官方品牌横幅（取自项目仓库）</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ══════════════ 界面 ══════════════ -->
+<section class="sec sec--alt" id="interface">
+  <div class="wrap">
+    <div class="sec-head rise">
+      <p class="kicker" data-i18n="ui.kicker">Interface</p>
+      <h2 data-i18n="ui.title">界面长这样</h2>
+      <p data-i18n="ui.lede">没有多余的装饰，信息密度优先。以下截图来自真实运行中的应用。</p>
+    </div>
+
+    <div class="shots">
+      <figure class="shot-card rise">
+        <div class="window">
+          <div class="window__bar" aria-hidden="true"><i></i><i></i><i></i><em data-i18n="ui.s1.bar">启动器 · 全部应用</em></div>
+          <img src="assets/img/screenshot-main-en.jpg"
+               data-lang-src-en="assets/img/screenshot-main-en.jpg"
+               data-lang-src-zh="assets/img/screenshot-main-zh.jpg"
+               data-alt-en="AppPocket showing every installed app in a grid, with the smart groups and the user's own categories in the sidebar"
+               data-alt-zh="AppPocket 主界面：所有已安装应用排成网格，左侧是智能分组与自定义分类"
+               width="2256" height="1576" loading="lazy"
+               alt="AppPocket showing every installed app in a grid, with the smart groups and the user's own categories in the sidebar">
+          <button class="zoombtn" type="button" data-zoom="assets/img/screenshot-main-en.jpg"
+                  data-lang-src-en="assets/img/screenshot-main-en.jpg"
+                  data-lang-src-zh="assets/img/screenshot-main-zh.jpg"
+                  aria-label="放大查看截图"></button>
+        </div>
+        <h3 data-i18n="ui.s1.t">启动器</h3>
+        <p data-i18n="ui.s1.d">所有已安装的应用都在一个网格里，左侧是四个实时计算的智能分组和你自己建的分类。图标下方的小圆点，表示这个应用正在运行。</p>
+      </figure>
+
+      <figure class="shot-card rise">
+        <div class="window">
+          <div class="window__bar" aria-hidden="true"><i></i><i></i><i></i><em data-i18n="ui.s2.bar">分类编辑器</em></div>
+          <img src="assets/img/screenshot-editor-en.jpg"
+               data-lang-src-en="assets/img/screenshot-editor-en.jpg"
+               data-lang-src-zh="assets/img/screenshot-editor-zh.jpg"
+               data-alt-en="The category editor: a name field, an SF Symbol picker, a colour palette, and a checklist of installed apps"
+               data-alt-zh="分类编辑面板：名称输入框、SF Symbol 图标选择器、颜色面板，以及已安装应用清单"
+               width="1696" height="1240" loading="lazy"
+               alt="The category editor: a name field, an SF Symbol picker, a colour palette, and a checklist of installed apps">
+          <button class="zoombtn" type="button" data-zoom="assets/img/screenshot-editor-en.jpg"
+                  data-lang-src-en="assets/img/screenshot-editor-en.jpg"
+                  data-lang-src-zh="assets/img/screenshot-editor-zh.jpg"
+                  aria-label="放大查看截图"></button>
+        </div>
+        <h3 data-i18n="ui.s2.t">分类编辑</h3>
+        <p data-i18n="ui.s2.d">一个分类由名称、SF Symbol 图标、颜色和一份可排序的成员列表组成。右侧这一栏就是勾选应用的地方，也是多选操作栏批量归类时的目标。</p>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 本地优先 ══════════════ -->
+<section class="sec" id="local">
+  <div class="wrap">
+    <div class="sec-head rise">
+      <p class="kicker" data-i18n="local.kicker">Local only</p>
+      <h2 data-i18n="local.title">你的数据只有一个文件</h2>
+      <p data-i18n="local.lede">这个应用没有任何能力把你的信息发出去——它压根不联网。所有状态就是磁盘上一个 JSON 文件，原子写入。</p>
+    </div>
+
+    <div class="duo">
+      <ul class="factlist rise">
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <div><b data-i18n="l1.t">以包标识为键，不是路径</b><span data-i18n="l1.d">把应用在文件夹之间挪动，不会让它悄悄从你的分类里消失。</span></div>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <div><b data-i18n="l2.t">应用里没有任何操作能删除文件</b><span data-i18n="l2.d">破坏性最强的一步是清理已卸载应用的标识——而这一步在扫描结果为空时会拒绝执行，因为扫不到东西意味着扫描失败了，不是你把应用全卸载了。</span></div>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <div><b data-i18n="l3.t">坏掉的文件不会被覆盖</b><span data-i18n-html="l3.d">解析失败的 library.json 会被重命名为 .corrupt 保留在磁盘上，你的分类还能手工抢救。设置 → 数据里也有导出与导入。</span></div>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <div><b data-i18n="l4.t">零第三方依赖</b><span data-i18n="l4.d">纯 SwiftUI。没有需要解析的包，克隆下来就能构建。</span></div>
+        </li>
+      </ul>
+
+      <div class="codecard rise">
+        <div class="codecard__bar">
+          <span data-i18n="code.title">全部持久化状态</span>
+          <span class="tag">JSON · <span data-i18n="code.atomic">原子写入</span></span>
+        </div>
+<pre><code><span class="c"># 这一个文件，就是 AppPocket 知道的全部</span>
+<span class="p">~/Library/Application Support/AppPocket/</span>
+└── library.json
+
+<span class="c"># 想备份？复制它就行</span>
+<span class="p">$</span> cp ~/Library/Application\ Support/AppPocket/library.json <span class="s">./backup.json</span>
+
+<span class="c"># 它不联网，所以这些都不会发生</span>
+<span class="c">#   ✗ 遥测上报   ✗ 账号登录   ✗ 云端同步</span></code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 快捷键 ══════════════ -->
+<section class="sec sec--alt" id="shortcuts">
+  <div class="wrap">
+    <div class="sec-head rise">
+      <p class="kicker" data-i18n="keys.kicker">Keyboard</p>
+      <h2 data-i18n="keys.title">全键盘也能用完</h2>
+      <p data-i18n="keys.lede">手不用离开键盘就能启动、选择、归类。</p>
+    </div>
+
+    <div class="tablewrap rise">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col" data-i18n="keys.th1">操作</th>
+            <th scope="col" data-i18n="keys.th2">方式</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td data-i18n="k1a">启动应用</td><td><kbd data-i18n="k1b">单击图标</kbd></td></tr>
+          <tr><td data-i18n="k2a">启动并保持启动器打开</td><td><kbd>⌥</kbd><span data-i18n="k2b"> + 单击</span></td></tr>
+          <tr><td data-i18n="k3a">多选</td><td><kbd>⌘</kbd><span data-i18n="k3b"> + 单击逐个选择，</span><kbd>⌘A</kbd><span data-i18n="k3c"> 全选</span></td></tr>
+          <tr><td data-i18n="k4a">键盘移动焦点</td><td><kbd>↑↓←→</kbd><span data-i18n="k4b"> 移动，</span><kbd>⏎</kbd><span data-i18n="k4c"> 启动，</span><kbd>esc</kbd><span data-i18n="k4d"> 清除</span></td></tr>
+          <tr><td data-i18n="k5a">新建分类</td><td><kbd>⌘N</kbd><span data-i18n="k5b">，或侧栏底部的 </span><kbd>+</kbd></td></tr>
+          <tr><td data-i18n="k6a">编辑当前分类</td><td><kbd>⌘E</kbd></td></tr>
+          <tr><td data-i18n="k7a">搜索</td><td><kbd>⌘F</kbd></td></tr>
+          <tr><td data-i18n="k8a">重新扫描新装应用</td><td><kbd>⌘R</kbd></td></tr>
+          <tr><td data-i18n="k9a">跳到智能分组</td><td><kbd>⌘1</kbd> – <kbd>⌘4</kbd></td></tr>
+          <tr><td data-i18n="k10a">跳到某个分类</td><td><kbd>⌘5</kbd> – <kbd>⌘9</kbd></td></tr>
+          <tr><td data-i18n="k11a">撤销</td><td><kbd>⌘Z</kbd><span data-i18n="k11b">（30 步）</span></td></tr>
+          <tr><td data-i18n="k12a">收起启动器</td><td><kbd>⌘W</kbd><span data-i18n="k12b"> —— 应用仍在菜单栏运行</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 安装 / 下载 ══════════════ -->
+<section class="sec" id="install">
+  <div class="wrap">
+    <div class="sec-head rise">
+      <p class="kicker" data-i18n="inst.kicker">Download</p>
+      <h2 data-i18n="inst.title">下载安装</h2>
+      <p data-i18n="inst.lede">当前版本 v1.0.0。也可以从发布页面查看完整的历史版本。</p>
+    </div>
+
+    <div class="dl rise">
+      <div class="dl__row">
+        <div class="dl__file">
+          <b>AppPocket-1.0.0.dmg</b> · 2.22 MB<br>
+          <span data-i18n="inst.shaPre">发布标签</span>: <a href="https://github.com/lpeixin/app-pocket/releases/tag/v1.0.0" target="_blank" rel="noopener" style="color:var(--brand-hi);text-decoration:underline;text-underline-offset:3px">v1.0.0</a>
+        </div>
+        <a class="btn btn--primary" href="https://github.com/lpeixin/app-pocket/releases/download/v1.0.0/AppPocket-1.0.0.dmg" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>
+          <span data-i18n="inst.dl">下载 DMG</span>
+        </a>
+      </div>
+
+      <dl class="specs">
+        <div><dt data-i18n="inst.s1">版本</dt><dd>1.0.0</dd></div>
+        <div><dt data-i18n="inst.s2">系统要求</dt><dd data-i18n="inst.s2v">macOS 14.0 或更高</dd></div>
+        <div><dt data-i18n="inst.s3">支持架构</dt><dd data-i18n="inst.s3v">Apple 芯片与 Intel（通用）</dd></div>
+        <div><dt data-i18n="inst.s4">许可证</dt><dd>MIT</dd></div>
+      </dl>
+    </div>
+
+    <div class="duo" style="margin-top:34px">
+      <div class="rise">
+        <h3 style="margin:0 0 16px;font-size:19px;letter-spacing:-.02em" data-i18n="inst.h3">三步装好</h3>
+        <ol class="steps">
+          <li><div><b data-i18n="st1t">下载 DMG</b><p data-i18n="st1d">点上面的下载按钮，拿到 AppPocket-1.0.0.dmg。</p></div></li>
+          <li><div><b data-i18n="st2t">拖进「应用程序」</b><p data-i18n-html="st2d">打开磁盘映像，把 <b>AppPocket</b> 拖到 <b>Applications</b> 快捷方式上即可。</p></div></li>
+          <li><div><b data-i18n="st3t">首次启动放行一次</b><p data-i18n-html="st3d">打开<b>系统设置 → 隐私与安全性</b>，在 AppPocket 的提示旁点<b>「仍要打开」</b>。macOS 14 及更早版本上，右键点击应用选择<b>「打开」</b>效果相同。</p></div></li>
+        </ol>
+      </div>
+
+      <div class="rise">
+        <h3 style="margin:0 0 16px;font-size:19px;letter-spacing:-.02em" data-i18n="inst.h4">关于 Gatekeeper，说清楚</h3>
+        <div class="note" style="margin-top:0">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8.2v.2M12 11.4v4.6"/></svg>
+          <div>
+            <p data-i18n="gate.p1">这个构建是 <b>ad-hoc 签名、未经公证</b>的——背后没有付费的 Apple 开发者账号。所以 macOS 要么拒绝首次启动，要么把它放进一个随机的只读副本里运行。</p>
+            <p data-i18n="gate.p2">这是 Gatekeeper 在尽它的职责，不代表应用本身有问题。如果你不愿意信任一个无法验证的二进制文件，可以自己构建：需要 macOS 14.0+ 与 Xcode 26 或更高，没有需要解析的依赖包。</p>
+            <p data-i18n="gate.p3">想跳过图形界面的话，清掉下载附带的隔离标记就行：</p>
+            <p><code id="xattrCmd">xattr -dr com.apple.quarantine /Applications/AppPocket.app</code></p>
+            <button class="copybtn" type="button" id="copyXattr" data-i18n="gate.copy">复制这条命令</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ FAQ ══════════════ -->
+<section class="sec sec--alt" id="faq">
+  <div class="wrap">
+    <div class="sec-head rise">
+      <p class="kicker" data-i18n="faq.kicker">FAQ</p>
+      <h2 data-i18n="faq.title">常见问题</h2>
+    </div>
+
+    <div class="faq rise">
+      <details>
+        <summary data-i18n="q1">为什么会有这个项目？</summary>
+        <div class="faq__body"><p data-i18n="a1">macOS 26 里 Launchpad 已经不在了。AppPocket 填的就是这个位置：一个把「所有应用」和「你的分类」放进同一个网格的启动器。它是本地优先的——没有账号、不联网、没有数据统计、没有第三方依赖。</p></div>
+      </details>
+      <details>
+        <summary data-i18n="q2">我的数据会离开这台 Mac 吗？</summary>
+        <div class="faq__body"><p data-i18n-html="a2">不会。应用不发起任何网络请求。全部状态就是 <code>~/Library/Application Support/AppPocket/library.json</code> 这一个文件，原子写入。设置 → 数据里有导出与导入，方便你自己留备份。</p></div>
+      </details>
+      <details>
+        <summary data-i18n="q3">需要哪个 macOS 版本？</summary>
+        <div class="faq__body"><p data-i18n="a3">macOS 14.0 或更高。发布的是通用二进制，Apple 芯片和 Intel 机器都能跑。</p></div>
+      </details>
+      <details>
+        <summary data-i18n="q4">为什么首次启动 macOS 拦着我？</summary>
+        <div class="faq__body">
+          <p data-i18n="a4a">因为这个构建是 ad-hoc 签名、未经公证的——这是一个没有注册开发者账号的开源项目能做到的诚实天花板。Gatekeeper 对一个没人签名的构建发出警告，是它在正常工作。</p>
+          <p data-i18n-html="a4b">解法在<a href="#install" style="color:var(--brand-hi)">上面的安装步骤</a>里。你也可以自己从源码构建，得到一个完全可验证的产物。</p>
+        </div>
+      </details>
+      <details>
+        <summary data-i18n="q5">分类是按什么记的？我挪动应用会丢分类吗？</summary>
+        <div class="faq__body"><p data-i18n-html="a5">按<b>应用包标识（bundle identifier）</b>，不是路径，所以在文件夹之间挪动应用不会让它从分类里消失。若某个应用包没有声明标识，才退回使用路径。</p></div>
+      </details>
+      <details>
+        <summary data-i18n="q6">为什么 App Sandbox 是关的？</summary>
+        <div class="faq__body"><p data-i18n-html="a6">开启沙箱后 <code>~/Applications</code> 无法读取，<code>homeDirectoryForCurrentUser</code> 也会落在应用容器内——也就是说，沙箱版本做不了这个应用存在的唯一理由。Hardened Runtime 仍然开启。代价是按现状无法上架 Mac App Store，这一点在项目的设计文档里写得很明白。</p></div>
+      </details>
+      <details>
+        <summary data-i18n="q7">应用界面有几种语言？</summary>
+        <div class="faq__body"><p data-i18n="a7">六种：English、简体中文、日本語、Deutsch、Français、Español。应用会跟随系统语言。</p></div>
+      </details>
+      <details>
+        <summary data-i18n="q8">能商用、能改吗？</summary>
+        <div class="faq__body"><p data-i18n-html="a8">MIT 许可证，都可以。项目里有 86 个单元测试覆盖分类增删改查、扫描过滤、搜索打分等逻辑，改动有底。源码与构建方式见 <a href="https://github.com/lpeixin/app-pocket" target="_blank" rel="noopener" style="color:var(--brand-hi)">GitHub 仓库</a>。</p></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 收尾 CTA ══════════════ -->
+<section class="closer">
+  <div class="wrap">
+    <h2 data-i18n="end.title">把 Launchpad 的位置补回来</h2>
+    <p data-i18n="end.lede">2.2 MB，装好即用。不喜欢就删掉——它连一个网络请求都没发过。</p>
+    <div class="closer__btns">
+      <a class="btn btn--primary" href="https://github.com/lpeixin/app-pocket/releases/download/v1.0.0/AppPocket-1.0.0.dmg" download>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>
+        <span data-i18n="end.dl">下载 v1.0.0</span>
+      </a>
+      <a class="btn btn--ghost" href="https://github.com/lpeixin/app-pocket/releases/tag/v1.0.0" target="_blank" rel="noopener">
+        <span data-i18n="end.rel">查看发布说明</span>
+      </a>
+      <a class="btn btn--ghost" href="https://github.com/lpeixin/app-pocket" target="_blank" rel="noopener">
+        <span data-i18n="end.gh">GitHub 源码</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="ftr">
+  <div class="wrap ftr__in">
+    <span data-i18n="ftr.license">AppPocket 以 MIT 许可证开源 · 作者 Peixin Liu</span>
+    <div class="ftr__links">
+      <a href="https://github.com/lpeixin/app-pocket" target="_blank" rel="noopener" data-i18n="ftr.1">源码</a>
+      <a href="https://github.com/lpeixin/app-pocket/releases/tag/v1.0.0" target="_blank" rel="noopener" data-i18n="ftr.2">发布页</a>
+      <a href="https://github.com/lpeixin/app-pocket/blob/main/DESIGN_DOCUMENT.md" target="_blank" rel="noopener" data-i18n="ftr.3">设计文档</a>
+      <a href="https://lpeixin.github.io/" data-i18n="ftr.4">返回主页</a>
+    </div>
+  </div>
+</footer>
+
+<!-- 灯箱 -->
+<div class="lb" id="lightbox" role="dialog" aria-modal="true" aria-label="放大查看截图">
+  <button class="lb__close" type="button" id="lbClose" aria-label="关闭">×</button>
+  <img id="lbImg" src="" alt="">
+</div>
+
+<script>
+/* ============================================================
+ * 双语切换 + 交互。文案各自成文，不是逐句对译。
+ * 语言偏好与主站共用 localStorage 的 site-lang 键。
+ * ============================================================ */
+(function () {
+  'use strict';
+
+  var COPY = {
+    en: {
+      'doc.title': 'AppPocket — Every app on your Mac, sorted the way you think',
+      'doc.desc': 'AppPocket is a local-only application launcher for macOS 26, where Launchpad is no longer with us. No account, no network, no analytics. Smart categories, drag-and-drop and live app monitoring. Open source, MIT.',
+      'skip': 'Skip to content',
+      'brand.sub': 'A local-first macOS launcher',
+      'nav.features': 'Features', 'nav.interface': 'Interface', 'nav.local': 'Local only',
+      'nav.shortcuts': 'Shortcuts', 'nav.install': 'Install', 'nav.faq': 'FAQ',
+      'btn.dl': 'Download', 'btn.dm': 'Download DMG · 2.2 MB', 'btn.gh': 'View on GitHub',
+      'hero.eyebrow': 'macOS 26 · Application launcher',
+      'hero.tag': 'Every app on your Mac, sorted the way you think.',
+      'hero.lead': 'A launcher that runs entirely on your own machine — Launchpad is no longer with us in macOS 26. No account, no network, no analytics, no third-party dependencies: it reads <code>Info.plist</code> files and writes one JSON file.',
+      'hero.p1': 'Local only', 'hero.p2': 'No account', 'hero.p3': 'No network', 'hero.p4': 'MIT licensed',
+      'hero.m1': 'macOS 14.0 or later', 'hero.m2': 'Apple silicon and Intel (universal)', 'hero.m3': 'Six interface languages',
+      'hero.zoom': 'Click to zoom',
+      'feat.kicker': 'Features', 'feat.title': 'What it does',
+      'feat.lede': 'The things a launcher is for, done properly — and nothing else.',
+      'f1.t': 'Every installed app',
+      'f1.d': 'From <code>/Applications</code>, <code>/System/Applications</code>, <code>/System/Library/CoreServices/Applications</code> and <code>~/Applications</code>, with real icons.',
+      'f2.t': 'Four smart groups',
+      'f2.d': 'Computed rather than stored: All, Uncategorized, Recent, Hidden. The counts are always right.',
+      'f3.t': 'Your own categories',
+      'f3.d': 'A name, an SF Symbol, a colour and an ordered member list. Create, edit, rename, duplicate, reorder, delete.',
+      'f4.t': 'Assign by dragging',
+      'f4.d': 'Drag a tile onto a category in the sidebar, use a tile’s context menu, or bulk-assign from the multi-select action bar.',
+      'f5.t': 'Search that ranks',
+      'f5.d': 'Relevance ranking, not a substring filter. Type a few letters and the right app is already on top.',
+      'f6.t': 'Reachable without the Dock',
+      'f6.d': 'A menu bar extra, plus an optional global hot key. ⌘W puts the launcher away and the app keeps running.',
+      'band.cap': 'Official AppPocket brand banner, taken from the project repository',
+      'ui.kicker': 'Interface', 'ui.title': 'What it looks like',
+      'ui.lede': 'No decoration for its own sake — density first. The screenshots below are the running app.',
+      'ui.s1.bar': 'Launcher · All Apps', 'ui.s1.t': 'The launcher',
+      'ui.s1.d': 'Everything installed, in one grid, with the four computed smart groups and your own categories down the left. A dot under a tile means the app is already running.',
+      'ui.s2.bar': 'Category editor', 'ui.s2.t': 'Categories',
+      'ui.s2.d': 'A category is a name, an SF Symbol, a colour and an ordered member list. The right-hand pane is where apps are ticked on and off — the same list the bulk-assign bar feeds into.',
+      'local.kicker': 'Local only', 'local.title': 'Your data is one file',
+      'local.lede': 'The app has no way to send anything anywhere — it never touches the network. All of its state is a single JSON file on disk, written atomically.',
+      'l1.t': 'Keyed by bundle identifier, not by path',
+      'l1.d': 'Moving an app between folders does not silently drop it out of your categories.',
+      'l2.t': 'Nothing in the app can delete a file',
+      'l2.d': 'The most destructive operation available is dropping identifiers for apps you have uninstalled — and that refuses to run when a scan comes back empty, because an empty scan means the scan failed, not that you uninstalled everything.',
+      'l3.t': 'A broken file is never overwritten',
+      'l3.d': 'A <code>library.json</code> that fails to parse is renamed to <code>.corrupt</code> so your categories are still on disk to be repaired by hand. Settings → Data has Export and Import if you want a copy.',
+      'l4.t': 'Zero third-party dependencies',
+      'l4.d': 'Pure SwiftUI. There are no packages to resolve — clone it and build.',
+      'code.title': 'All persisted state', 'code.atomic': 'atomic write',
+      'keys.kicker': 'Keyboard', 'keys.title': 'Keyboard all the way through',
+      'keys.lede': 'Launch, select and categorise without your hands leaving the keys.',
+      'keys.th1': 'Action', 'keys.th2': 'How',
+      'k1a': 'Launch an app', 'k1b': 'Click its tile',
+      'k2a': 'Launch and keep the launcher open', 'k2b': '-click',
+      'k3a': 'Select several apps', 'k3b': '-click each, ', 'k3c': ' for all',
+      'k4a': 'Move the keyboard focus', 'k4b': ' to move, ', 'k4c': ' to launch, ', 'k4d': ' to clear',
+      'k5a': 'New category', 'k5b': ', or the ', 
+      'k6a': 'Edit the selected category',
+      'k7a': 'Search', 'k8a': 'Rescan for new apps',
+      'k9a': 'Jump to a smart group', 'k10a': 'Jump to a category',
+      'k11a': 'Undo', 'k11b': ' (30 levels)',
+      'k12a': 'Put the launcher away', 'k12b': ' — the app keeps running in the menu bar',
+      'inst.kicker': 'Download', 'inst.title': 'Download & install',
+      'inst.lede': 'The current version is v1.0.0. Older releases are on the releases page.',
+      'inst.dl': 'Download the DMG',
+      'inst.shaPre': 'Release tag',
+      'inst.s1': 'Version', 'inst.s2': 'Requires', 'inst.s2v': 'macOS 14.0 or later',
+      'inst.s3': 'Runs on', 'inst.s3v': 'Apple silicon and Intel (universal)', 'inst.s4': 'Licence',
+      'inst.h3': 'Three steps', 'inst.h4': 'About Gatekeeper, honestly',
+      'st1t': 'Download the DMG', 'st1d': 'Use the button above to get AppPocket-1.0.0.dmg.',
+      'st2t': 'Drag it into Applications', 'st2d': 'Open the disk image and drag <b>AppPocket</b> onto the <b>Applications</b> shortcut.',
+      'st3t': 'Allow it once on first launch', 'st3d': 'Open <b>System Settings → Privacy &amp; Security</b>, scroll to the Security section and click <b>“Open Anyway”</b> next to the AppPocket message. On macOS 14 and earlier, right-clicking the app and choosing <b>“Open”</b> does the same thing.',
+      'gate.p1': 'This build is ad-hoc signed and not notarised — there is no paid Apple Developer account behind it. So macOS will either refuse the first launch or quietly run the app from a randomised read-only copy.',
+      'gate.p2': 'That is Gatekeeper doing its job on a build nobody has signed, not a sign that something is wrong with the app. If you would rather not trust a binary you cannot verify, build it yourself: macOS 14.0+ and Xcode 26 or later, with no packages to resolve.',
+      'gate.p3': 'To skip the dialog instead, clear the flag the download attached:',
+      'gate.copy': 'Copy this command',
+      'faq.kicker': 'FAQ', 'faq.title': 'Questions worth asking',
+      'q1': 'Why does this project exist?',
+      'a1': 'Launchpad is no longer with us in macOS 26, and AppPocket fills exactly that slot: one grid with every app and your own categories in it. It is local-only — no account, no network, no analytics, no third-party dependencies.',
+      'q2': 'Can any of my data leave this Mac?',
+      'a2': 'No. The app makes no network requests at all. All of its state is one file, <code>~/Library/Application Support/AppPocket/library.json</code>, written atomically. Settings → Data has Export and Import if you want your own backup.',
+      'q3': 'Which macOS do I need?',
+      'a3': 'macOS 14.0 or later. The release is a universal binary, so it runs on both Apple silicon and Intel.',
+      'q4': 'Why does macOS block the first launch?',
+      'a4a': 'Because the build is ad-hoc signed and not notarised — the honest ceiling for an open-source project without a registered developer account. Gatekeeper warning you about a build nobody signed is it doing its job.',
+      'a4b': 'The remedy is in <a href="#install" style="color:var(--brand-hi)">the install steps above</a>. You can also build it from source and get an artefact you can verify yourself.',
+      'q5': 'What are categories keyed by? Will moving an app break them?',
+      'a5': 'By <b>bundle identifier</b>, not by path — so moving an app between folders does not drop it from your categories. An app that declares no identifier falls back to its path.',
+      'q6': 'Why is the App Sandbox off?',
+      'a6': 'With it on, <code>~/Applications</code> is unreadable and <code>homeDirectoryForCurrentUser</code> resolves inside the app’s container — which is to say a sandboxed build cannot do the one thing the app exists to do. Hardened Runtime stays on. The cost is Mac App Store eligibility as written, which the project’s design document states plainly.',
+      'q7': 'How many languages does the app ship with?',
+      'a7': 'Six: English, 简体中文, 日本語, Deutsch, Français and Español. It follows your system language.',
+      'q8': 'Can I use this commercially or modify it?',
+      'a8': 'Yes — MIT. There are 86 unit tests covering category CRUD, the scan filters and the query scorer, so changes have something to fall back on. Source and build instructions are in the <a href="https://github.com/lpeixin/app-pocket" target="_blank" rel="noopener" style="color:var(--brand-hi)">GitHub repository</a>.',
+      'end.title': 'Take Launchpad’s slot back',
+      'end.lede': '2.2 MB, and it works the moment you install it. Delete it if you disagree — it never made a single network request.',
+      'end.dl': 'Download v1.0.0', 'end.rel': 'Release notes', 'end.gh': 'Source on GitHub',
+      'ftr.license': 'AppPocket is open source under the MIT licence · by Peixin Liu',
+      'ftr.1': 'Source', 'ftr.2': 'Releases', 'ftr.3': 'Design doc', 'ftr.4': 'Back to my site'
+    },
+
+    zh: {
+      'doc.title': 'AppPocket — 把 Mac 上的每个应用，按你的想法归类',
+      'doc.desc': 'AppPocket 是一个只在你这台机器上运行的 macOS 26 应用启动器。没有账号、不联网、没有数据统计。智能分组、拖拽归类、实时应用状态，MIT 开源。',
+      'skip': '跳到主要内容',
+      'brand.sub': '本地优先的 macOS 启动器',
+      'nav.features': '功能', 'nav.interface': '界面', 'nav.local': '本地优先',
+      'nav.shortcuts': '快捷键', 'nav.install': '安装', 'nav.faq': 'FAQ',
+      'btn.dl': '下载', 'btn.dm': '下载 DMG · 2.2 MB', 'btn.gh': '在 GitHub 上查看',
+      'hero.eyebrow': 'macOS 26 · 应用启动器',
+      'hero.tag': '把 Mac 上的每个应用，按你的想法归类。',
+      'hero.lead': '一个只在你这台机器上运行的应用启动器——macOS 26 里 Launchpad 已经不在了。没有账号、不联网、没有数据统计、没有第三方依赖：它读 <code>Info.plist</code>，写一个 JSON 文件。',
+      'hero.p1': '本地运行', 'hero.p2': '无需账号', 'hero.p3': '不联网', 'hero.p4': 'MIT 开源',
+      'hero.m1': 'macOS 14.0 或更高', 'hero.m2': 'Apple 芯片与 Intel（通用二进制）', 'hero.m3': '六种界面语言',
+      'hero.zoom': '点击放大',
+      'feat.kicker': '功能', 'feat.title': '它做什么',
+      'feat.lede': '一个启动器该做的事，做好做透；其余一概不做。',
+      'f1.t': '全部已安装应用',
+      'f1.d': '覆盖 <code>/Applications</code>、<code>/System/Applications</code>、<code>/System/Library/CoreServices/Applications</code> 与 <code>~/Applications</code>，显示真实图标。',
+      'f2.t': '四个智能分组',
+      'f2.d': '实时计算而非存储：全部应用、未分类、最近使用、已隐藏。数字永远是准的。',
+      'f3.t': '你自己的分类',
+      'f3.d': '名称、SF Symbol 图标、颜色，加一份可排序的成员列表。新建、编辑、重命名、复制、拖拽排序、删除。',
+      'f4.t': '拖一下就算归类',
+      'f4.d': '把图标拖到侧栏的分类上、用图标的右键菜单，或者在多选操作栏里批量归到某个分类。',
+      'f5.t': '按相关度排序的搜索',
+      'f5.d': '是打分排序，不是简单的子串过滤。打几个字母，想要的那个就排在最前面。',
+      'f6.t': '不用回到 Dock',
+      'f6.d': '菜单栏图标常驻，还能设一个全局快捷键随时唤起。⌘W 收起后应用仍在菜单栏运行。',
+      'band.cap': 'AppPocket 官方品牌横幅（取自项目仓库）',
+      'ui.kicker': '界面', 'ui.title': '界面长这样',
+      'ui.lede': '没有多余的装饰，信息密度优先。以下截图来自真实运行中的应用。',
+      'ui.s1.bar': '启动器 · 全部应用', 'ui.s1.t': '启动器',
+      'ui.s1.d': '所有已安装的应用都在一个网格里，左侧是四个实时计算的智能分组和你自己建的分类。图标下方的小圆点，表示这个应用正在运行。',
+      'ui.s2.bar': '分类编辑器', 'ui.s2.t': '分类编辑',
+      'ui.s2.d': '一个分类由名称、SF Symbol 图标、颜色和一份可排序的成员列表组成。右侧这一栏就是勾选应用的地方，也是多选操作栏批量归类时的目标。',
+      'local.kicker': '本地优先', 'local.title': '你的数据只有一个文件',
+      'local.lede': '这个应用没有任何能力把你的信息发出去——它压根不联网。所有状态就是磁盘上一个 JSON 文件，原子写入。',
+      'l1.t': '以包标识为键，不是路径',
+      'l1.d': '把应用在文件夹之间挪动，不会让它悄悄从你的分类里消失。',
+      'l2.t': '应用里没有任何操作能删除文件',
+      'l2.d': '破坏性最强的一步是清理已卸载应用的标识——而这一步在扫描结果为空时会拒绝执行，因为扫不到东西意味着扫描失败了，不是你把应用全卸载了。',
+      'l3.t': '坏掉的文件不会被覆盖',
+      'l3.d': '解析失败的 <code>library.json</code> 会被重命名为 <code>.corrupt</code> 保留在磁盘上，你的分类还能手工抢救。设置 → 数据里也有导出与导入。',
+      'l4.t': '零第三方依赖',
+      'l4.d': '纯 SwiftUI。没有需要解析的包，克隆下来就能构建。',
+      'code.title': '全部持久化状态', 'code.atomic': '原子写入',
+      'keys.kicker': '键盘', 'keys.title': '全键盘也能用完',
+      'keys.lede': '手不用离开键盘就能启动、选择、归类。',
+      'keys.th1': '操作', 'keys.th2': '方式',
+      'k1a': '启动应用', 'k1b': '单击图标',
+      'k2a': '启动并保持启动器打开', 'k2b': ' + 单击',
+      'k3a': '多选', 'k3b': ' + 单击逐个选择，', 'k3c': ' 全选',
+      'k4a': '键盘移动焦点', 'k4b': ' 移动，', 'k4c': ' 启动，', 'k4d': ' 清除',
+      'k5a': '新建分类', 'k5b': '，或侧栏底部的 ',
+      'k6a': '编辑当前分类',
+      'k7a': '搜索', 'k8a': '重新扫描新装应用',
+      'k9a': '跳到智能分组', 'k10a': '跳到某个分类',
+      'k11a': '撤销', 'k11b': '（30 步）',
+      'k12a': '收起启动器', 'k12b': ' —— 应用仍在菜单栏运行',
+      'inst.kicker': '下载', 'inst.title': '下载安装',
+      'inst.lede': '当前版本 v1.0.0。也可以从发布页面查看完整的历史版本。',
+      'inst.dl': '下载 DMG',
+      'inst.shaPre': '发布标签',
+      'inst.s1': '版本', 'inst.s2': '系统要求', 'inst.s2v': 'macOS 14.0 或更高',
+      'inst.s3': '支持架构', 'inst.s3v': 'Apple 芯片与 Intel（通用）', 'inst.s4': '许可证',
+      'inst.h3': '三步装好', 'inst.h4': '关于 Gatekeeper，说清楚',
+      'st1t': '下载 DMG', 'st1d': '点上面的下载按钮，拿到 AppPocket-1.0.0.dmg。',
+      'st2t': '拖进「应用程序」', 'st2d': '打开磁盘映像，把 <b>AppPocket</b> 拖到 <b>Applications</b> 快捷方式上即可。',
+      'st3t': '首次启动放行一次', 'st3d': '打开<b>系统设置 → 隐私与安全性</b>，在 AppPocket 的提示旁点<b>「仍要打开」</b>。macOS 14 及更早版本上，右键点击应用选择<b>「打开」</b>效果相同。',
+      'gate.p1': '这个构建是 ad-hoc 签名、未经公证的——背后没有付费的 Apple 开发者账号。所以 macOS 要么拒绝首次启动，要么把它放进一个随机的只读副本里运行。',
+      'gate.p2': '这是 Gatekeeper 在尽它的职责，不代表应用本身有问题。如果你不愿意信任一个无法验证的二进制文件，可以自己构建：需要 macOS 14.0+ 与 Xcode 26 或更高，没有需要解析的依赖包。',
+      'gate.p3': '想跳过图形界面的话，清掉下载附带的隔离标记就行：',
+      'gate.copy': '复制这条命令',
+      'faq.kicker': '常见问题', 'faq.title': '值得问的几个问题',
+      'q1': '为什么会有这个项目？',
+      'a1': 'macOS 26 里 Launchpad 已经不在了。AppPocket 填的就是这个位置：一个把「所有应用」和「你的分类」放进同一个网格的启动器。它是本地优先的——没有账号、不联网、没有数据统计、没有第三方依赖。',
+      'q2': '我的数据会离开这台 Mac 吗？',
+      'a2': '不会。应用不发起任何网络请求。全部状态就是 <code>~/Library/Application Support/AppPocket/library.json</code> 这一个文件，原子写入。设置 → 数据里有导出与导入，方便你自己留备份。',
+      'q3': '需要哪个 macOS 版本？',
+      'a3': 'macOS 14.0 或更高。发布的是通用二进制，Apple 芯片和 Intel 机器都能跑。',
+      'q4': '为什么首次启动 macOS 拦着我？',
+      'a4a': '因为这个构建是 ad-hoc 签名、未经公证的——这是一个没有注册开发者账号的开源项目能做到的诚实天花板。Gatekeeper 对一个没人签名的构建发出警告，是它在正常工作。',
+      'a4b': '解法在<a href="#install" style="color:var(--brand-hi)">上面的安装步骤</a>里。你也可以自己从源码构建，得到一个完全可验证的产物。',
+      'q5': '分类是按什么记的？我挪动应用会丢分类吗？',
+      'a5': '按<b>应用包标识（bundle identifier）</b>，不是路径，所以在文件夹之间挪动应用不会让它从分类里消失。若某个应用包没有声明标识，才退回使用路径。',
+      'q6': '为什么 App Sandbox 是关的？',
+      'a6': '开启沙箱后 <code>~/Applications</code> 无法读取，<code>homeDirectoryForCurrentUser</code> 也会落在应用容器内——也就是说，沙箱版本做不了这个应用存在的唯一理由。Hardened Runtime 仍然开启。代价是按现状无法上架 Mac App Store，这一点在项目的设计文档里写得很明白。',
+      'q7': '应用界面有几种语言？',
+      'a7': '六种：English、简体中文、日本語、Deutsch、Français、Español。应用会跟随系统语言。',
+      'q8': '能商用、能改吗？',
+      'a8': 'MIT 许可证，都可以。项目里有 86 个单元测试覆盖分类增删改查、扫描过滤、搜索打分等逻辑，改动有底。源码与构建方式见 <a href="https://github.com/lpeixin/app-pocket" target="_blank" rel="noopener" style="color:var(--brand-hi)">GitHub 仓库</a>。',
+      'end.title': '把 Launchpad 的位置补回来',
+      'end.lede': '2.2 MB，装好即用。不喜欢就删掉——它连一个网络请求都没发过。',
+      'end.dl': '下载 v1.0.0', 'end.rel': '查看发布说明', 'end.gh': 'GitHub 源码',
+      'ftr.license': 'AppPocket 以 MIT 许可证开源 · 作者 Peixin Liu',
+      'ftr.1': '源码', 'ftr.2': '发布页', 'ftr.3': '设计文档', 'ftr.4': '返回主页'
+    }
+  };
+
+  var root = document.documentElement;
+  var lang = 'en';
+
+  function t(key) {
+    var pack = COPY[lang] || COPY.en;
+    return (key in pack) ? pack[key] : (COPY.en[key] != null ? COPY.en[key] : null);
+  }
+
+  /** 应用当前语言：文案、图片、alt、文档标题与描述 */
+  function apply() {
+    root.lang = lang === 'zh' ? 'zh-Hans' : 'en';
+
+    var nodes = document.querySelectorAll('[data-i18n]');
+    for (var i = 0; i < nodes.length; i++) {
+      var v = t(nodes[i].getAttribute('data-i18n'));
+      if (v != null) nodes[i].textContent = v;
+    }
+
+    // 需要保留内联标签（<code>/<b>/<a>）的条目走 innerHTML，
+    // 文案全部来自本文件里的静态字典，不含任何外部输入。
+    var rich = document.querySelectorAll('[data-i18n-html]');
+    for (var r = 0; r < rich.length; r++) {
+      var rv = t(rich[r].getAttribute('data-i18n-html'));
+      if (rv != null) rich[r].innerHTML = rv;
+    }
+
+    // 双语图片：banner 与截图在 repo 里各有中/英版本
+    var imgs = document.querySelectorAll('img[data-lang-src-' + lang + ']');
+    for (var j = 0; j < imgs.length; j++) {
+      var src = imgs[j].getAttribute('data-lang-src-' + lang);
+      if (src) imgs[j].setAttribute('src', src);
+    }
+
+    // 图片 alt 跟随语言
+    var alts = document.querySelectorAll('img[data-alt-en][data-alt-zh]');
+    for (var k = 0; k < alts.length; k++) {
+      alts[k].setAttribute('alt', alts[k].getAttribute('data-alt-' + lang));
+    }
+
+    document.title = t('doc.title');
+    var desc = document.querySelector('meta[name="description"]');
+    if (desc) desc.setAttribute('content', t('doc.desc'));
+
+    var btn = document.getElementById('langToggle');
+    if (btn) {
+      btn.textContent = lang === 'zh' ? 'EN' : '中文';
+      btn.setAttribute('aria-label', lang === 'zh' ? 'Switch to English' : '切换到简体中文');
+    }
+    try { localStorage.setItem('site-lang', lang); } catch (e) {}
+  }
+
+  /* ── 语言初始化：?lang= > localStorage > 浏览器语言 ───────── */
+  (function initLang() {
+    var q = new URLSearchParams(location.search).get('lang');
+    var saved = null;
+    try { saved = localStorage.getItem('site-lang'); } catch (e) {}
+    if (q === 'zh' || q === 'en') lang = q;
+    else if (saved === 'zh' || saved === 'en') lang = saved;
+    else lang = (navigator.language || 'en').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
+    apply();
+  })();
+
+  document.getElementById('langToggle').addEventListener('click', function () {
+    lang = lang === 'zh' ? 'en' : 'zh';
+    apply();
+  });
+
+  /* ── 顶栏滚动阴影 ────────────────────────────────────────── */
+  var hdr = document.getElementById('hdr');
+  function onScroll() { hdr.classList.toggle('is-stuck', window.scrollY > 8); }
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  /* ── 截图灯箱 ────────────────────────────────────────────── */
+  var lb = document.getElementById('lightbox');
+  var lbImg = document.getElementById('lbImg');
+  var lastFocus = null;
+
+  function openLb(src, alt) {
+    lastFocus = document.activeElement;
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lb.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('lbClose').focus();
+  }
+  function closeLb() {
+    lb.classList.remove('is-open');
+    lbImg.removeAttribute('src');
+    document.body.style.overflow = '';
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+
+  var zooms = document.querySelectorAll('[data-zoom]');
+  for (var z = 0; z < zooms.length; z++) {
+    zooms[z].addEventListener('click', function () {
+      var src = this.getAttribute('data-lang-src-' + lang) || this.getAttribute('data-zoom');
+      var img = this.parentNode.querySelector('img');
+      openLb(src, img ? img.getAttribute('alt') : '');
+    });
+  }
+  lb.addEventListener('click', closeLb);
+  document.getElementById('lbClose').addEventListener('click', closeLb);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && lb.classList.contains('is-open')) closeLb();
+  });
+
+  /* ── 复制隔离标记清除命令 ───────────────────────────────── */
+  var copyBtn = document.getElementById('copyXattr');
+  copyBtn.addEventListener('click', function () {
+    var cmd = document.getElementById('xattrCmd').textContent.trim();
+    function done() {
+      copyBtn.textContent = lang === 'zh' ? '已复制 ✓' : 'Copied ✓';
+      setTimeout(function () { copyBtn.textContent = t('gate.copy'); }, 1800);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(cmd).then(done, fallback);
+    } else { fallback(); }
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = cmd; ta.setAttribute('readonly', '');
+      ta.style.position = 'absolute'; ta.style.left = '-9999px';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  });
+
+  /* ── 滚动出现动画 ───────────────────────────────────────── */
+  var items = document.querySelectorAll('.rise');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    for (var n = 0; n < items.length; n++) io.observe(items[n]);
+  } else {
+    for (var m = 0; m < items.length; m++) items[m].classList.add('in');
+  }
+})();
+</script>
+</body>
+</html>
