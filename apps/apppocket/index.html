@@ -74,7 +74,7 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; color-scheme: dark; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
@@ -520,6 +520,7 @@ kbd {
   .rise { opacity: 1; transform: none; }
 }
 </style>
+<noscript><style>.rise { opacity: 1; transform: none; }</style></noscript>
 </head>
 
 <body>
