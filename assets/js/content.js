@@ -63,7 +63,8 @@ window.SITE = {
       slotPrDesc:   "把你提交并被合并的 Pull Request 链接补充在这里。",
       builtWith:    "手写 HTML / CSS / JavaScript",
       rights:       "保留所有权利",
-      backTop:      "回到顶部"
+      backTop:      "回到顶部",
+      views:        "次浏览"
     },
     en: {
       brandSub:     "Software Engineer / AI Agents",
@@ -91,7 +92,8 @@ window.SITE = {
       slotPrDesc:   "Drop links to the pull requests you submitted and got merged.",
       builtWith:    "Hand-written HTML / CSS / JavaScript",
       rights:       "All rights reserved",
-      backTop:      "Back to top"
+      backTop:      "Back to top",
+      views:        "views"
     }
   },
 

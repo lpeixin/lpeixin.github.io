@@ -970,6 +970,27 @@ svg.ico {
   font-size: 11.5px;
 }
 
+/* 累计访问量小药丸：数据取到前 hidden，不会留一个空数字 */
+.ftr__views {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.ftr__views b {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.ftr__views svg.ico { width: 13px; height: 13px; }
+.ftr__views[hidden] { display: none; }   /* display 会盖掉 UA 的 hidden */
+
 /* ── 13 toast ────────────────────────────────────────────────────────────── */
 
 .toast {

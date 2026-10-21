@@ -463,6 +463,16 @@ kbd {
 .ftr a { color: var(--text-3); text-decoration: none; transition: color .18s; }
 .ftr a:hover { color: var(--brand-hi); }
 
+/* 累计访问量：GoatCounter 数字取到前一直 hidden，不留空位 */
+.views {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  padding: 3px 10px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--surface); font-family: var(--mono); font-size: 11.5px; color: var(--text-3);
+}
+.views[hidden] { display: none; }   /* display 会盖掉浏览器的 hidden */
+.views b { color: var(--text-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.views svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
 /* 灯箱 */
 .lb {
   position: fixed; inset: 0; z-index: 90; display: none;
@@ -953,6 +963,7 @@ kbd {
 <footer class="ftr">
   <div class="wrap ftr__in">
     <span data-i18n="ftr.license">AppPocket 以 MIT 许可证开源 · 作者 Peixin Liu</span>
+    <span class="views" id="gcViews" title="GoatCounter" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.6 12s3.6-6.2 9.4-6.2 9.4 6.2 9.4 6.2-3.6 6.2-9.4 6.2S2.6 12 2.6 12Z"/><circle cx="12" cy="12" r="2.7"/></svg><b></b><span data-i18n="ftr.views">次浏览</span></span>
     <div class="ftr__links">
       <a href="https://github.com/lpeixin/app-pocket" target="_blank" rel="noopener" data-i18n="ftr.1">源码</a>
       <a href="https://github.com/lpeixin/app-pocket/releases/tag/v1.0.0" target="_blank" rel="noopener" data-i18n="ftr.2">发布页</a>
@@ -1072,7 +1083,8 @@ kbd {
       'end.lede': '2.2 MB, and it works the moment you install it. Delete it if you disagree — it never made a single network request.',
       'end.dl': 'Download v1.0.0', 'end.rel': 'Release notes', 'end.gh': 'Source on GitHub',
       'ftr.license': 'AppPocket is open source under the MIT licence · by Peixin Liu',
-      'ftr.1': 'Source', 'ftr.2': 'Releases', 'ftr.3': 'Design doc', 'ftr.4': 'Back to my site'
+      'ftr.1': 'Source', 'ftr.2': 'Releases', 'ftr.3': 'Design doc', 'ftr.4': 'Back to my site',
+      'ftr.views': 'views'
     },
 
     zh: {
@@ -1170,7 +1182,8 @@ kbd {
       'end.lede': '2.2 MB，装好即用。不喜欢就删掉——它连一个网络请求都没发过。',
       'end.dl': '下载 v1.0.0', 'end.rel': '查看发布说明', 'end.gh': 'GitHub 源码',
       'ftr.license': 'AppPocket 以 MIT 许可证开源 · 作者 Peixin Liu',
-      'ftr.1': '源码', 'ftr.2': '发布页', 'ftr.3': '设计文档', 'ftr.4': '返回主页'
+      'ftr.1': '源码', 'ftr.2': '发布页', 'ftr.3': '设计文档', 'ftr.4': '返回主页',
+      'ftr.views': '次浏览'
     }
   };
 
@@ -1314,6 +1327,27 @@ kbd {
   } else {
     for (var m = 0; m < items.length; m++) items[m].classList.add('in');
   }
+
+  /* ── 累计访问量：读 GoatCounter 的公开计数接口 ─────────────────────────── */
+  function loadViews(retry) {
+    var chip = document.getElementById('gcViews');
+    if (!chip || !window.fetch) return;
+    var path = location.pathname.replace(/index\.html$/i, '') || '/';
+    fetch('https://lpeixin.goatcounter.com/counter/' + encodeURIComponent(path) + '.json')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var n = d ? parseInt(d.count, 10) : NaN;
+        /* 第一次访问时本页的计数可能还没落库，稍后补一次；再拿不到就继续隐藏 */
+        if (!isFinite(n) || n < 1) {
+          if (!retry) setTimeout(function () { loadViews(true); }, 1500);
+          return;
+        }
+        chip.querySelector('b').textContent = window.Intl ? n.toLocaleString('en-US') : String(n);
+        chip.hidden = false;
+      })
+      .catch(function () { /* 离线或被拦截：不显示这一项 */ });
+  }
+  loadViews();
 })();
 </script>
 </body>

@@ -430,6 +430,16 @@ td a:hover { border-bottom-color: var(--brand-hi); }
 .foot a { color: var(--text-3); text-decoration: none; transition: color .16s; }
 .foot a:hover { color: var(--brand-hi); }
 
+/* 累计访问量：GoatCounter 数字取到前一直 hidden，不留空位 */
+.views {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  padding: 3px 10px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--surface); font-family: var(--mono); font-size: 11.5px; color: var(--text-3);
+}
+.views[hidden] { display: none; }   /* display 会盖掉浏览器的 hidden */
+.views b { color: var(--text-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.views svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
 /* ── 灯箱 ───────────────────────────────────────────────── */
 .lb {
   position: fixed; inset: 0; z-index: 90; display: none;
@@ -1028,6 +1038,7 @@ td a:hover { border-bottom-color: var(--brand-hi); }
 <footer class="foot">
   <div class="wrap foot__in">
     <span data-i18n="foot.line">Stock MCPilot 以 MIT 许可证开源 · 作者 Peixin Liu</span>
+    <span class="views" id="gcViews" title="GoatCounter" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.6 12s3.6-6.2 9.4-6.2 9.4 6.2 9.4 6.2-3.6 6.2-9.4 6.2S2.6 12 2.6 12Z"/><circle cx="12" cy="12" r="2.7"/></svg><b></b><span data-i18n="foot.views">次浏览</span></span>
     <nav class="foot__links" aria-label="页脚链接" data-i18n-aria="a11y.foot">
       <a href="https://github.com/lpeixin/stock-mcpilot" target="_blank" rel="noopener" data-i18n="foot.repo">源码仓库</a>
       <a href="https://github.com/lpeixin/stock-mcpilot/blob/main/README.md" target="_blank" rel="noopener" data-i18n="foot.readme">README（英文）</a>
@@ -1188,6 +1199,7 @@ td a:hover { border-bottom-color: var(--brand-hi); }
       'foot.line': 'Stock MCPilot 以 MIT 许可证开源 · 作者 Peixin Liu',
       'foot.repo': '源码仓库', 'foot.readme': 'README（英文）',
       'foot.readmez': 'README（中文）', 'foot.home': '返回主页',
+      'foot.views': '次浏览',
 
       'copy.done': '已复制 ✓'
     },
@@ -1325,6 +1337,7 @@ td a:hover { border-bottom-color: var(--brand-hi); }
       'foot.line': 'Stock MCPilot is open source under the MIT licence · by Peixin Liu',
       'foot.repo': 'Repository', 'foot.readme': 'README (English)',
       'foot.readmez': 'README (中文)', 'foot.home': 'Back to home',
+      'foot.views': 'views',
 
       'copy.done': 'Copied ✓'
     }
@@ -1477,6 +1490,27 @@ td a:hover { border-bottom-color: var(--brand-hi); }
     }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
     rises.forEach(function (el) { io.observe(el); });
   }
+
+  /* ── 累计访问量：读 GoatCounter 的公开计数接口 ────────── */
+  function loadViews(retry) {
+    var chip = document.getElementById('gcViews');
+    if (!chip || !window.fetch) return;
+    var path = location.pathname.replace(/index\.html$/i, '') || '/';
+    fetch('https://lpeixin.goatcounter.com/counter/' + encodeURIComponent(path) + '.json')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var n = d ? parseInt(d.count, 10) : NaN;
+        /* 第一次访问时本页的计数可能还没落库，稍后补一次；再拿不到就继续隐藏 */
+        if (!isFinite(n) || n < 1) {
+          if (!retry) setTimeout(function () { loadViews(true); }, 1500);
+          return;
+        }
+        chip.querySelector('b').textContent = window.Intl ? n.toLocaleString('en-US') : String(n);
+        chip.hidden = false;
+      })
+      .catch(function () { /* 离线或被拦截：不显示这一项 */ });
+  }
+  loadViews();
 
   /* ── 初始语言：?lang → localStorage → 浏览器语言 ─────── */
   var param = new URLSearchParams(location.search).get('lang');

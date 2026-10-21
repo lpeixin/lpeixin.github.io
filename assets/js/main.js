@@ -46,7 +46,8 @@
     star: '<svg class="ico ico--fill" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9Z"/></svg>',
     copy: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11.4" height="11.4" rx="2.2"/><path d="M15 6.2A2.2 2.2 0 0 0 12.8 4H5.8A2.2 2.2 0 0 0 3.6 6.2v7A2.2 2.2 0 0 0 5.8 15.4"/></svg>',
     doc: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.4h8.5L19 7.9v12.7H6Z"/><path d="M14 3.4v4.8h4.8"/><path d="M9 12.5h6M9 15.5h6"/></svg>',
-    arrow: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M12.5 6l5.5 6-5.5 6"/></svg>'
+    arrow: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M12.5 6l5.5 6-5.5 6"/></svg>',
+    eye: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.6 12s3.6-6.2 9.4-6.2 9.4 6.2 9.4 6.2-3.6 6.2-9.4 6.2S2.6 12 2.6 12Z"/><circle cx="12" cy="12" r="2.7"/></svg>'
   };
 
   /* ── 首屏数字（可被 GitHub API 覆盖） ───────────────────────────────────── */
@@ -55,6 +56,10 @@
     repos: S.profile.fallbackStats.repos,
     followers: S.profile.fallbackStats.followers
   };
+
+  /* GoatCounter 累计访问量；null 表示还没取到，取到前页脚不显示这一项 */
+  var viewCount = null;
+  var GC_HOST = 'https://lpeixin.goatcounter.com/counter/';
 
   /* ── 板块外壳 ───────────────────────────────────────────────────────────── */
 
@@ -310,12 +315,25 @@
     return '<div class="wrap ftr__in">' +
       '<span>© ' + year + ' ' + esc(p.name) + ' · ' + esc(u.rights) + '</span>' +
       '<span class="ftr__top">updated ' + esc(p.updated) + '</span>' +
+      viewsChip(u) +
       '<div class="ftr__links">' +
         '<a href="' + esc(p.github) + '" target="_blank" rel="noopener">' + ICON.gh + 'GitHub</a>' +
         mailLink + copyBtn +
         '<a href="#top">' + ICON.up + esc(u.backTop) + '</a>' +
       '</div>' +
     '</div>';
+  }
+
+  /** 页脚的累计访问量小药丸；取不到数据就一直不渲染，不会出现空数字 */
+  function viewsChip(u) {
+    return '<span class="ftr__views" id="ftrViews" title="GoatCounter"' +
+      (viewCount == null ? ' hidden' : '') + '>' +
+      ICON.eye + '<b>' + (viewCount == null ? '' : fmtViews(viewCount)) + '</b>' +
+      esc(u.views) + '</span>';
+  }
+
+  function fmtViews(n) {
+    return window.Intl ? n.toLocaleString('en-US') : String(n);
   }
 
   /* ── 导航 ───────────────────────────────────────────────────────────────── */
@@ -532,6 +550,30 @@
       .catch(function () { /* 限流或离线：保持静态值 */ });
   }
 
+  /* ── 累计访问量：GoatCounter 的公开计数接口 ──────────────────────────────── */
+
+  function fetchViews(retry) {
+    if (!window.fetch) return;
+    var path = location.pathname.replace(/index\.html$/i, '') || '/';
+    fetch(GC_HOST + encodeURIComponent(path) + '.json')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var n = d ? parseInt(d.count, 10) : NaN;
+        if (!isFinite(n) || n < 1) {
+          /* 首次访问时本页的计数可能还没落库，稍后补一次；再失败就不显示 */
+          if (!retry) setTimeout(function () { fetchViews(true); }, 1500);
+          return;
+        }
+        viewCount = n;
+        var chip = el('ftrViews');
+        if (chip) {
+          chip.querySelector('b').textContent = fmtViews(n);
+          chip.hidden = false;
+        }
+      })
+      .catch(function () { /* 离线或被拦截：保持隐藏 */ });
+  }
+
   /* ── 启动 ───────────────────────────────────────────────────────────────── */
 
   render();
@@ -539,4 +581,5 @@
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll, { passive: true });
   fetchStats();
+  fetchViews();
 })();
