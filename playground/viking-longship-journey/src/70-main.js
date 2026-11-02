@@ -44,13 +44,141 @@ let quality, dpr = 1, frameAvg = 16, dynScale = 1;
 
 const JOURNEY = { s: 0.02, t: 0, tT: 0, yaw: 0, speed: 3.0, time: 0, dist: 0, auto: false, steerVis: 0 };
 const CHAPTERS = [
-  { at: 0.00, num: 'I', title: 'The Still Water', sub: 'Where the fjord opens to the sea' },
-  { at: 0.16, num: 'II', title: 'The Narrowing', sub: 'Cliffs close around the channel' },
-  { at: 0.33, num: 'III', title: 'Falls of the High Shelf', sub: 'Meltwater from the summer snows' },
-  { at: 0.50, num: 'IV', title: 'Harbour of the Long Houses', sub: 'A settlement keeps its fire' },
-  { at: 0.68, num: 'V', title: 'The Deep Reach', sub: 'Still water, and the far ridge' },
-  { at: 0.85, num: 'VI', title: 'Northbound', sub: 'The last of the light' },
+  { at: 0.00, num: 'I', numZh: '一', title: 'The Still Water', sub: 'Where the fjord opens to the sea' },
+  { at: 0.16, num: 'II', numZh: '二', title: 'The Narrowing', sub: 'Cliffs close around the channel' },
+  { at: 0.33, num: 'III', numZh: '三', title: 'Falls of the High Shelf', sub: 'Meltwater from the summer snows' },
+  { at: 0.50, num: 'IV', numZh: '四', title: 'Harbour of the Long Houses', sub: 'A settlement keeps its fire' },
+  { at: 0.68, num: 'V', numZh: '五', title: 'The Deep Reach', sub: 'Still water, and the far ridge' },
+  { at: 0.85, num: 'VI', numZh: '六', title: 'Northbound', sub: 'The last of the light' },
 ];
+
+const I18N = {
+  en: {
+    pageTitle: 'Northbound — A Nordic Passage',
+    pageDesc: 'An interactive 3D journey through a Nordic fjord aboard a Viking longship.',
+    brandTitle: 'Northbound.',
+    brandSub: 'A Nordic Passage',
+    introTitle: 'Northbound<span style="opacity:.55">.</span>',
+    introSub: 'A Nordic Passage',
+    introLede: 'A wooden longship, a narrow fjord, and the low light of the north. Take the tiller and follow the water inland.',
+    begin: 'Begin the voyage',
+    hint: '<b>A</b> / <b>D</b> steer &nbsp;·&nbsp; <b>W</b> / <b>S</b> speed &nbsp;·&nbsp; drag to look',
+    follow: 'Follow',
+    followTitle: 'Follow camera',
+    orbit: 'Orbit',
+    orbitTitle: 'Orbit camera',
+    cinema: 'Cinema',
+    cinemaTitle: 'Cinematic camera',
+    lightTitle: 'Change light',
+    presets: {
+      Morning: 'Morning',
+      Overcast: 'Overcast',
+      Moonlight: 'Moonlight',
+    },
+    auto: 'Auto',
+    autoTitle: 'Automatic journey',
+    sound: 'Sound',
+    soundTitle: 'Sound',
+    pause: 'Pause',
+    pauseTitle: 'Pause',
+    play: 'Play',
+    playTitle: 'Resume',
+    reset: 'Reset',
+    resetTitle: 'Reset',
+    full: 'Full',
+    fullTitle: 'Fullscreen',
+    hide: 'Hide',
+    hideTitle: 'Hide interface',
+    showTitle: 'Show interface',
+    langTitle: 'Switch to Chinese (切换至中文)',
+    touchLeft: 'Steer left',
+    touchRight: 'Steer right',
+    touchSlow: 'Slow down',
+    touchFast: 'Speed up',
+    chapterLabel: (c) => `Chapter ${c.num}`,
+    chapters: [
+      { title: 'The Still Water', sub: 'Where the fjord opens to the sea' },
+      { title: 'The Narrowing', sub: 'Cliffs close around the channel' },
+      { title: 'Falls of the High Shelf', sub: 'Meltwater from the summer snows' },
+      { title: 'Harbour of the Long Houses', sub: 'A settlement keeps its fire' },
+      { title: 'The Deep Reach', sub: 'Still water, and the far ridge' },
+      { title: 'Northbound', sub: 'The last of the light' },
+    ],
+    errPrefix: 'Unable to start the scene: ',
+  },
+  zh: {
+    pageTitle: '向北而行 — 北欧峡湾之旅',
+    pageDesc: '乘坐维京长船穿行北欧峡湾的沉浸式 3D 交互之旅。',
+    brandTitle: '向北而行.',
+    brandSub: '北欧峡湾之旅',
+    introTitle: '向北而行<span style="opacity:.55">.</span>',
+    introSub: '北欧峡湾之旅',
+    introLede: '一艘木制长船，一道幽狭峡湾，一抹北境的低垂天光。执起舵柄，顺水向内陆深处航行。',
+    begin: '开启航程',
+    hint: '<b>A</b> / <b>D</b> 转向 &nbsp;·&nbsp; <b>W</b> / <b>S</b> 航速 &nbsp;·&nbsp; 拖拽环视',
+    follow: '跟随',
+    followTitle: '跟随视角',
+    orbit: '环绕',
+    orbitTitle: '环绕视角',
+    cinema: '电影',
+    cinemaTitle: '电影运镜视角',
+    lightTitle: '切换光影',
+    presets: {
+      Morning: '晨曦',
+      Overcast: '阴霭',
+      Moonlight: '月夜',
+    },
+    auto: '巡航',
+    autoTitle: '自动巡航',
+    sound: '音效',
+    soundTitle: '环境音效',
+    pause: '暂停',
+    pauseTitle: '暂停',
+    play: '继续',
+    playTitle: '继续航行',
+    reset: '重置',
+    resetTitle: '重置航程',
+    full: '全屏',
+    fullTitle: '全屏显示',
+    hide: '隐藏',
+    hideTitle: '隐藏界面',
+    showTitle: '显示界面',
+    langTitle: '切换至英文 (Switch to English)',
+    touchLeft: '向左转向',
+    touchRight: '向右转向',
+    touchSlow: '减速',
+    touchFast: '加速',
+    chapterLabel: (c) => `第${c.numZh}章`,
+    chapters: [
+      { title: '静水之畔', sub: '峡湾向大海敞开之处' },
+      { title: '峡道渐窄', sub: '两岸峭壁夹峙水道' },
+      { title: '高崖飞瀑', sub: '源自夏日积雪的融水' },
+      { title: '长屋港湾', sub: '聚落守望着不熄的炉火' },
+      { title: '幽深水道', sub: '静水无波，远山如脊' },
+      { title: '向北而行', sub: '天际最后一抹余晖' },
+    ],
+    errPrefix: '无法启动场景：',
+  },
+};
+
+function detectDefaultLang() {
+  try {
+    const saved = localStorage.getItem('nb_lang');
+    if (saved === 'zh' || saved === 'en') return saved;
+  } catch (_) {}
+  const navLangs = (navigator.languages && navigator.languages.length)
+    ? navigator.languages
+    : [navigator.language || navigator.userLanguage || 'en'];
+  for (const l of navLangs) {
+    if (!l) continue;
+    const low = String(l).toLowerCase();
+    if (low.startsWith('zh')) return 'zh';
+    if (low.startsWith('en')) return 'en';
+  }
+  return 'en';
+}
+
+let currentLang = detectDefaultLang();
 
 const LOOK = {
   sunColor: glCol(0xffdcc0),
@@ -280,13 +408,16 @@ function syncCamUI() {
 }
 function setPreset(i) {
   presetIndex = (i + PRESETS.length) % PRESETS.length;
-  $('b-light').textContent = PRESETS[presetIndex].label;
+  const pName = PRESETS[presetIndex].name;
+  $('b-light').textContent = I18N[currentLang].presets[pName] || PRESETS[presetIndex].label;
   $('b-light').classList.add('is-on');
 }
 function togglePause() {
   paused = !paused;
+  const L = I18N[currentLang];
   $('b-pause').classList.toggle('is-on', paused);
-  $('b-pause').textContent = paused ? 'Play' : 'Pause';
+  $('b-pause').textContent = paused ? L.play : L.pause;
+  $('b-pause').title = paused ? L.playTitle : L.pauseTitle;
 }
 function toggleUI() {
   document.body.classList.toggle('ui-hidden');
@@ -311,22 +442,81 @@ function toggleSound() {
 }
 
 let chapterIdx = -1, chapterTimer = 0;
+function renderChapter(idx) {
+  if (idx < 0 || idx >= CHAPTERS.length) return;
+  const c = CHAPTERS[idx];
+  const L = I18N[currentLang];
+  const ch = L.chapters[idx];
+  const el = $('chapter');
+  if (!el || !ch) return;
+  el.querySelector('.num').textContent = L.chapterLabel(c);
+  el.querySelector('.ttl').innerHTML = `${ch.title}<br><em>${ch.sub}</em>`;
+}
 function updateChapters(dt) {
   let idx = 0;
   for (let i = 0; i < CHAPTERS.length; i++) if (JOURNEY.s >= CHAPTERS[i].at) idx = i;
   if (idx !== chapterIdx) {
     chapterIdx = idx;
-    const c = CHAPTERS[idx];
-    const el = $('chapter');
-    el.querySelector('.num').textContent = `Chapter ${c.num}`;
-    el.querySelector('.ttl').innerHTML = `${c.title}<br><em>${c.sub}</em>`;
-    el.classList.add('show');
+    renderChapter(idx);
+    $('chapter').classList.add('show');
     chapterTimer = 7.5;
   }
   if (chapterTimer > 0) {
     chapterTimer -= dt;
     if (chapterTimer <= 0) $('chapter').classList.remove('show');
   }
+}
+
+function setLang(lang, persist = true) {
+  currentLang = lang === 'zh' ? 'zh' : 'en';
+  if (persist) {
+    try { localStorage.setItem('nb_lang', currentLang); } catch (_) {}
+  }
+  const L = I18N[currentLang];
+  document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+  document.title = L.pageTitle;
+  const descMeta = document.querySelector('meta[name="description"]');
+  if (descMeta) descMeta.setAttribute('content', L.pageDesc);
+
+  if ($('brand-title')) $('brand-title').textContent = L.brandTitle;
+  if ($('brand-sub')) $('brand-sub').textContent = L.brandSub;
+  if ($('intro-title')) $('intro-title').innerHTML = L.introTitle;
+  if ($('intro-sub')) $('intro-sub').textContent = L.introSub;
+  if ($('intro-lede')) $('intro-lede').textContent = L.introLede;
+  if ($('begin')) $('begin').textContent = L.begin;
+  if ($('hint')) $('hint').innerHTML = L.hint;
+
+  if ($('b-follow')) { $('b-follow').textContent = L.follow; $('b-follow').title = L.followTitle; }
+  if ($('b-orbit')) { $('b-orbit').textContent = L.orbit; $('b-orbit').title = L.orbitTitle; }
+  if ($('b-cinema')) { $('b-cinema').textContent = L.cinema; $('b-cinema').title = L.cinemaTitle; }
+  if ($('b-light')) {
+    const pName = PRESETS[presetIndex] ? PRESETS[presetIndex].name : 'Morning';
+    $('b-light').textContent = L.presets[pName] || pName;
+    $('b-light').title = L.lightTitle;
+  }
+  if ($('b-auto')) { $('b-auto').textContent = L.auto; $('b-auto').title = L.autoTitle; }
+  if ($('b-sound')) { $('b-sound').textContent = L.sound; $('b-sound').title = L.soundTitle; }
+  if ($('b-pause')) {
+    $('b-pause').textContent = paused ? L.play : L.pause;
+    $('b-pause').title = paused ? L.playTitle : L.pauseTitle;
+  }
+  if ($('b-reset')) { $('b-reset').textContent = L.reset; $('b-reset').title = L.resetTitle; }
+  if ($('b-full')) { $('b-full').textContent = L.full; $('b-full').title = L.fullTitle; }
+  if ($('b-hide')) { $('b-hide').textContent = L.hide; $('b-hide').title = L.hideTitle; }
+  if ($('dot')) $('dot').title = L.showTitle;
+  if ($('b-lang')) $('b-lang').title = L.langTitle;
+  if ($('intro-lang')) $('intro-lang').title = L.langTitle;
+
+  if ($('t-left')) { $('t-left').title = L.touchLeft; $('t-left').setAttribute('aria-label', L.touchLeft); }
+  if ($('t-right')) { $('t-right').title = L.touchRight; $('t-right').setAttribute('aria-label', L.touchRight); }
+  if ($('t-slow')) { $('t-slow').title = L.touchSlow; $('t-slow').setAttribute('aria-label', L.touchSlow); }
+  if ($('t-fast')) { $('t-fast').title = L.touchFast; $('t-fast').setAttribute('aria-label', L.touchFast); }
+
+  renderChapter(chapterIdx >= 0 ? chapterIdx : 0);
+}
+
+function toggleLang() {
+  setLang(currentLang === 'zh' ? 'en' : 'zh', true);
 }
 
 function setupUI() {
@@ -342,6 +532,8 @@ function setupUI() {
   $('b-hide').onclick = toggleUI;
   $('dot').onclick = toggleUI;
   $('begin').onclick = beginVoyage;
+  if ($('b-lang')) $('b-lang').onclick = toggleLang;
+  if ($('intro-lang')) $('intro-lang').onclick = toggleLang;
 
   const hold = (id, on, off) => {
     const el = $(id);
@@ -360,6 +552,7 @@ function setupUI() {
   });
   syncCamUI();
   setPreset(0);
+  setLang(currentLang, false);
 }
 
 /* --------------------------------------------------------- quality tiers */
@@ -599,6 +792,9 @@ window.NB = {
     if (fov) CAM.fov = fov;
   },
   setPreset(i) { setPreset(i); },
+  get lang() { return currentLang; },
+  setLang(l, p = true) { setLang(l, p); },
+  toggleLang() { toggleLang(); },
   rawScene(v) { window.__RAWSCENE = v; },
   rawScene(v) { window.__RAWSCENE = v; },
   heightAt: (x, z) => heightAtWorld(x, z),
@@ -617,11 +813,13 @@ window.NB = {
 
 window.addEventListener('DOMContentLoaded', () => {
   try {
+    setLang(currentLang, false);
     init();
   } catch (err) {
     console.error(err);
     const e = document.getElementById('err');
     e.style.display = 'block';
-    e.textContent = 'Unable to start the scene: ' + (err && err.message ? err.message : err);
+    const prefix = (I18N[currentLang] && I18N[currentLang].errPrefix) || 'Unable to start the scene: ';
+    e.textContent = prefix + (err && err.message ? err.message : err);
   }
 });

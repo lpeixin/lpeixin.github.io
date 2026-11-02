@@ -13,8 +13,8 @@
     --accent: #e3bd85;
     --glass: rgba(10,14,16,.34);
     --hair: rgba(255,255,255,.14);
-    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Songti SC", serif;
-    --sans: "Helvetica Neue", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", serif;
+    --sans: "Helvetica Neue", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", Arial, sans-serif;
   }
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
   html,body{ margin:0; padding:0; height:100%; overflow:hidden; background:#070a0b; color:var(--ink); font-family:var(--sans); }
@@ -105,6 +105,27 @@
   }
   .btn .ico{ width:13px; height:13px; display:block; opacity:.85; }
   .sep{ width:1px; height:18px; background:rgba(255,255,255,.12); margin:0 4px; flex:0 0 auto; }
+  .lang-btn{ gap:5px; letter-spacing:.12em; }
+  .lang-btn .lang-sep{ font-style:normal; opacity:.35; }
+  .lang-btn [data-l]{ transition:color .25s ease, opacity .25s ease; color:var(--ink-faint); }
+  html[lang^="zh"] .lang-btn [data-l="zh"],
+  html[lang="en"] .lang-btn [data-l="en"]{ color:var(--accent); font-weight:500; }
+  #intro-lang{
+    position:absolute; top:clamp(18px,3vw,40px); right:clamp(18px,3.2vw,44px);
+    background:var(--glass); border:1px solid var(--hair);
+    -webkit-backdrop-filter:blur(18px) saturate(1.25); backdrop-filter:blur(18px) saturate(1.25);
+    box-shadow:0 6px 24px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.07);
+    padding:0 14px;
+  }
+
+  html[lang^="zh"] #brand p{ font-size:10.5px; letter-spacing:.38em; }
+  html[lang^="zh"] #chapter .num{ font-size:10.5px; letter-spacing:.32em; }
+  html[lang^="zh"] #chapter .ttl em{ font-style:normal; }
+  html[lang^="zh"] #hint{ font-size:11px; letter-spacing:.16em; }
+  html[lang^="zh"] .btn{ font-size:11px; letter-spacing:.1em; }
+  html[lang^="zh"] #intro .sub{ font-size:11px; letter-spacing:.42em; }
+  html[lang^="zh"] #intro .lede{ font-style:normal; line-height:1.9; }
+  html[lang^="zh"] #begin{ font-size:11.5px; letter-spacing:.28em; }
 
   #intro{
     position:absolute; inset:0; display:grid; place-items:center; z-index:5;
@@ -181,6 +202,7 @@
     #chapter{ bottom:auto; top:calc(96px + env(safe-area-inset-top)); max-width:70vw; }
     #hint{ display:none; }
     .btn{ padding:0 9px; font-size:9px; letter-spacing:.12em; height:30px; }
+    html[lang^="zh"] .btn{ font-size:10px; letter-spacing:.06em; }
     .btn .label-long{ display:none; }
     .sep{ margin:0 2px; }
     #bar{ gap:0; padding:5px; }
@@ -194,8 +216,8 @@
 
 <div id="ui">
   <header id="brand">
-    <h1>Northbound.</h1>
-    <p>A Nordic Passage</p>
+    <h1 id="brand-title">Northbound.</h1>
+    <p id="brand-sub">A Nordic Passage</p>
   </header>
 
   <div id="chapter">
@@ -220,6 +242,8 @@
       <button class="btn" id="b-reset" title="Reset">Reset</button>
       <button class="btn" id="b-full" title="Fullscreen">Full</button>
       <button class="btn" id="b-hide" title="Hide interface">Hide</button>
+      <span class="sep"></span>
+      <button class="btn lang-btn" id="b-lang" title="Switch language"><span data-l="zh">中</span><i class="lang-sep">/</i><span data-l="en">EN</span></button>
     </div>
   </div>
 
@@ -238,10 +262,11 @@
 </div>
 
 <div id="intro">
+  <button class="btn lang-btn" id="intro-lang" title="Switch language"><span data-l="zh">中</span><i class="lang-sep">/</i><span data-l="en">EN</span></button>
   <div class="inner">
-    <h2>Northbound<span style="opacity:.55">.</span></h2>
-    <p class="sub">A Nordic Passage</p>
-    <p class="lede">A wooden longship, a narrow fjord, and the low light of the north. Take the tiller and follow the water inland.</p>
+    <h2 id="intro-title">Northbound<span style="opacity:.55">.</span></h2>
+    <p class="sub" id="intro-sub">A Nordic Passage</p>
+    <p class="lede" id="intro-lede">A wooden longship, a narrow fjord, and the low light of the north. Take the tiller and follow the water inland.</p>
     <button id="begin">Begin the voyage</button>
     <div id="loadbar"><i></i></div>
   </div>
