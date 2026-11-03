@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Endless Runner</title>
 <script type="importmap">
 {
@@ -12,40 +12,58 @@
 }
 </script>
 <style>
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1b26; }
-  body { font-family: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; color: #eaf3fb; }
-  #game { display: block; width: 100%; height: 100%; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1b26; overscroll-behavior: none; }
+  body { font-family: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+         "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif; color: #eaf3fb; user-select: none; }
+  #game { display: block; width: 100%; height: 100%; touch-action: none; }
 
   #hud { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
   .stat { position: absolute; top: 22px; line-height: 1.1; text-shadow: 0 2px 10px rgba(0, 0, 0, .55); }
   .stat .label { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; opacity: .6; }
   .stat .value { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .sub { font-size: 14px; font-weight: 500; opacity: .72; margin-top: 6px; font-variant-numeric: tabular-nums; }
   #score { left: 26px; }
   #best { right: 26px; text-align: right; }
   #best .value { font-size: 20px; font-weight: 500; }
-  #speed { left: 50%; transform: translateX(-50%); text-align: center; }
-  #speed .value { font-size: 16px; font-weight: 500; opacity: .8; }
 
-  #hint { position: absolute; left: 26px; bottom: 22px; font-size: 12.5px; letter-spacing: .04em;
-          opacity: .55; transition: opacity .9s ease; }
-  #hint.faded { opacity: 0; }
-  kbd { font-family: inherit; border: 1px solid rgba(234, 243, 251, .4); border-radius: 4px;
-        padding: 1px 5px; margin: 0 1px; }
+  button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+
+  #lang { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); pointer-events: auto;
+          padding: 7px 16px; border-radius: 999px; font-size: 13px; letter-spacing: .06em;
+          border: 1px solid rgba(234, 243, 251, .3); background: rgba(10, 22, 32, .42); backdrop-filter: blur(4px); }
+  #lang:hover { background: rgba(10, 22, 32, .62); }
+
+  #controls { position: absolute; left: 0; right: 0; bottom: 0; display: flex;
+              justify-content: space-between; align-items: flex-end; gap: 12px;
+              padding: 0 max(16px, env(safe-area-inset-left)) calc(18px + env(safe-area-inset-bottom))
+                      max(16px, env(safe-area-inset-right)); }
+  .cluster { display: flex; gap: 12px; pointer-events: none; }
+  .ctrl { pointer-events: auto; width: 66px; height: 66px; border-radius: 50%; padding: 0;
+          display: grid; place-items: center; line-height: 1.15;
+          border: 1px solid rgba(234, 243, 251, .28); background: rgba(10, 22, 32, .42);
+          backdrop-filter: blur(4px); touch-action: none; }
+  .ctrl:hover { background: rgba(10, 22, 32, .62); }
+  .ctrl.active { background: rgba(79, 163, 209, .55); transform: scale(.94); }
+  .ctrl .glyph { font-size: 22px; }
+  .ctrl .cap { font-size: 9.5px; letter-spacing: .04em; opacity: .6; }
+  @media (pointer: coarse) { .ctrl .cap { display: none; } }
 
   #overlay { position: absolute; inset: 0; display: none; place-items: center;
              background: radial-gradient(70% 70% at 50% 45%, rgba(6, 14, 20, .5), rgba(6, 14, 20, .82)); }
-  #overlay.show { display: grid; }
-  .card { text-align: center; padding: 34px 48px; border: 1px solid rgba(234, 243, 251, .18);
+  #overlay.show { display: grid; pointer-events: auto; }
+  .card { text-align: center; padding: 34px 44px; margin: 0 20px; border: 1px solid rgba(234, 243, 251, .18);
           border-radius: 14px; background: rgba(10, 22, 32, .55); backdrop-filter: blur(6px); }
-  .card h1 { margin: 0 0 6px; font-size: 40px; }
-  .card .sub { margin: 0 0 22px; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; opacity: .6; }
-  .card .row { display: flex; gap: 44px; justify-content: center; margin-bottom: 24px; }
-  .card .row div { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; opacity: .65; }
+  .card h1 { margin: 0 0 6px; font-size: 38px; }
+  .card .sub { margin: 0 0 22px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .6; }
+  .card .row { display: flex; gap: 44px; justify-content: center; margin-bottom: 26px; }
+  .card .row > div { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; opacity: .65; }
   .card .row strong { display: block; font-size: 42px; opacity: 1; letter-spacing: 0;
                       font-variant-numeric: tabular-nums; margin-top: 6px; }
   .card .row .record { color: #ffd479; }
-  .card p { margin: 0; font-size: 14px; opacity: .8; }
+  #restart { padding: 13px 34px; border-radius: 999px; font-size: 16px; letter-spacing: .04em;
+             border: 1px solid rgba(234, 243, 251, .45); background: rgba(234, 243, 251, .12); }
+  #restart:hover { background: rgba(234, 243, 251, .24); }
 </style>
 </head>
 <body>
@@ -53,20 +71,41 @@
 
 <!-- UI -->
 <div id="hud">
-  <div class="stat" id="score"><div class="label">Score</div><div class="value">0</div></div>
-  <div class="stat" id="best"><div class="label">Best</div><div class="value">0</div></div>
-  <div class="stat" id="speed"><div class="label">Speed</div><div class="value">0 km/h</div></div>
-  <div id="hint"><kbd>A</kbd><kbd>D</kbd> / <kbd>&larr;</kbd><kbd>&rarr;</kbd> lane &nbsp;·&nbsp;
-    <kbd>Space</kbd> jump &nbsp;·&nbsp; <kbd>&darr;</kbd> slide &nbsp;·&nbsp; <kbd>R</kbd> restart</div>
+  <div class="stat" id="score">
+    <div class="label" data-i18n="score">Score</div>
+    <div class="value">0</div>
+    <div class="sub" id="speed">0 km/h</div>
+  </div>
+  <div class="stat" id="best">
+    <div class="label" data-i18n="best">Best</div>
+    <div class="value">0</div>
+  </div>
+  <button id="lang" type="button" data-i18n="langName" aria-label="Switch language">中文</button>
+
+  <div id="controls">
+    <div class="cluster">
+      <button class="ctrl" type="button" data-act="left" aria-label="Move left">
+        <span class="glyph">&#9664;</span><span class="cap" data-i18n="capLeft">A / &larr;</span></button>
+      <button class="ctrl" type="button" data-act="right" aria-label="Move right">
+        <span class="glyph">&#9654;</span><span class="cap" data-i18n="capRight">D / &rarr;</span></button>
+    </div>
+    <div class="cluster">
+      <button class="ctrl" type="button" data-act="slide" aria-label="Slide">
+        <span class="glyph">&#9661;</span><span class="cap" data-i18n="capSlide">&darr;</span></button>
+      <button class="ctrl" type="button" data-act="jump" aria-label="Jump">
+        <span class="glyph">&#9651;</span><span class="cap" data-i18n="capJump">Space / &uarr;</span></button>
+    </div>
+  </div>
+
   <div id="overlay">
     <div class="card">
-      <h1>Game Over</h1>
-      <p class="sub" id="cause">You hit an obstacle</p>
+      <h1 data-i18n="gameOver">Game Over</h1>
+      <p class="sub" id="cause"></p>
       <div class="row">
-        <div>Score<strong id="final">0</strong></div>
-        <div>Best<strong id="finalBest" class="record">0</strong></div>
+        <div><span data-i18n="score">Score</span><strong id="final">0</strong></div>
+        <div><span data-i18n="best">Best</span><strong id="finalBest" class="record">0</strong></div>
       </div>
-      <p>Press <kbd>R</kbd> to run again</p>
+      <button id="restart" type="button" data-i18n="restart">Restart</button>
     </div>
   </div>
 </div>
@@ -96,9 +135,42 @@ const FIRST_ROW_AT   = 42;      // grace distance before the first obstacle
 const DESPAWN_BEHIND = 16;
 const ROW_GAP        = 21;      // base spacing between obstacle rows
 const BEST_KEY       = 'astra-3d-001-endless-runner.best';
+const LANG_KEY       = 'astra-3d-001-endless-runner.lang';
 
 const laneX = (i) => (i - (LANE_COUNT - 1) / 2) * LANE_W;
 const TRACK_W = LANE_COUNT * LANE_W + 2;
+
+/* --------------------------- LOCALISATION ------------------------- *
+ * zh/en strings; the default comes from the browser language and a   *
+ * manual choice is persisted. Every visible string is re-rendered by *
+ * applyLang(), so switching mid-run needs no reload.                 */
+const STRINGS = {
+  en: {
+    docTitle: 'Endless Runner', htmlLang: 'en', langName: '中文',
+    score: 'Score', best: 'Best', gameOver: 'Game Over', restart: 'Restart', kmh: 'km/h',
+    capLeft: 'A / ←', capRight: 'D / →', capJump: 'Space / ↑', capSlide: '↓',
+    aLeft: 'Move left', aRight: 'Move right', aJump: 'Jump', aSlide: 'Slide', aLang: 'Switch language',
+    cause: { block: 'You hit the jump block', gate: 'You hit the slide gate', pillar: 'You hit the wall pillar' },
+  },
+  zh: {
+    docTitle: '无尽奔跑', htmlLang: 'zh-CN', langName: 'EN',
+    score: '得分', best: '最高', gameOver: '游戏结束', restart: '重新开始', kmh: '公里/时',
+    capLeft: 'A / ←', capRight: 'D / →', capJump: '空格 / ↑', capSlide: '↓',
+    aLeft: '向左换道', aRight: '向右换道', aJump: '跳跃', aSlide: '下滑', aLang: '切换语言',
+    cause: { block: '撞上了跳跃障碍', gate: '撞上了滑行横杆', pillar: '撞上了路障立柱' },
+  },
+};
+
+const store = {
+  get(k, fallback) { try { return localStorage.getItem(k) ?? fallback; } catch { return fallback; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch { /* storage blocked */ } },
+  best() { return parseInt(store.get(BEST_KEY, '0'), 10) || 0; },
+  saveBest(v) { store.set(BEST_KEY, String(v)); },
+};
+
+const browserLang = (navigator.language || 'en').toLowerCase();
+let lang = store.get(LANG_KEY, '') || (browserLang.startsWith('zh') ? 'zh' : 'en');
+if (!STRINGS[lang]) lang = 'en';
 
 /* ----------------------------- RENDERING -------------------------- */
 const canvas = document.getElementById('game');
@@ -238,7 +310,6 @@ figure.add(armL, armR, legL, legR);
  * y0/y1 absolute heights.                                            */
 const KINDS = {
   block: {
-    label: 'jump block',
     boxes: [{ ox: 0, hx: 0.9, hz: 0.5, y0: 0.0, y1: 1.0 }],
     build() {
       const g = new THREE.Group();
@@ -248,7 +319,6 @@ const KINDS = {
     },
   },
   gate: {
-    label: 'slide gate',
     boxes: [{ ox: 0, hx: 1.48, hz: 0.35, y0: 1.15, y1: 2.6 }],
     build() {
       const g = new THREE.Group();
@@ -259,7 +329,6 @@ const KINDS = {
     },
   },
   pillar: {
-    label: 'wall pillar',
     boxes: [{ ox: 0, hx: 0.66, hz: 0.66, y0: 0.0, y1: 2.6 }],
     build() {
       const g = new THREE.Group();
@@ -288,7 +357,7 @@ function spawnRow(d) {
   for (let i = 0; i < count; i++) {
     const kind = KIND_NAMES[(Math.random() * KIND_NAMES.length) | 0];
     const def = KINDS[kind];
-    const o = { group: def.build(), boxes: def.boxes, kind: def.label, lane: lanes[i], d: d + (Math.random() - 0.5) * 2 };
+    const o = { group: def.build(), boxes: def.boxes, kind, lane: lanes[i], d: d + (Math.random() - 0.5) * 2 };
     o.group.position.set(laneX(lanes[i]), 0, -o.d);
     obstacles.push(o);
     world.add(o.group);
@@ -303,55 +372,90 @@ function refillSpawns(distance) {
   }
 }
 
-/* ------------------------------- INPUT ---------------------------- */
-const input = { left: false, right: false, jump: false, slide: false, restart: false };
-const HANDLED = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyA', 'KeyD', 'KeyR'];
+/* ------------------------------- INPUT ---------------------------- *
+ * Keyboard and on-screen buttons feed the same momentary flags, so   *
+ * the update loop cannot tell a tap from a keypress.                 */
+const input = { left: false, right: false, jump: false, slide: false };
+const KEY_ACTION = {
+  ArrowLeft: 'left', KeyA: 'left',
+  ArrowRight: 'right', KeyD: 'right',
+  ArrowUp: 'jump', Space: 'jump',
+  ArrowDown: 'slide',
+};
 
 addEventListener('keydown', (e) => {
-  if (e.repeat || !HANDLED.includes(e.code)) return;
+  const action = KEY_ACTION[e.code];
+  if (!action || e.repeat) return;
   e.preventDefault();
-  if (e.code === 'ArrowLeft' || e.code === 'KeyA') input.left = true;
-  else if (e.code === 'ArrowRight' || e.code === 'KeyD') input.right = true;
-  else if (e.code === 'Space' || e.code === 'ArrowUp') input.jump = true;
-  else if (e.code === 'ArrowDown') input.slide = true;
-  else if (e.code === 'KeyR') input.restart = true;
+  input[action] = true;
 });
-addEventListener('keyup', (e) => {
-  if (e.code === 'ArrowLeft' || e.code === 'KeyA') input.left = false;
-  if (e.code === 'ArrowRight' || e.code === 'KeyD') input.right = false;
-});
-addEventListener('blur', () => { input.left = input.right = false; });
+addEventListener('blur', () => { input.left = input.right = input.jump = input.slide = false; });
+
+const controlButtons = [...document.querySelectorAll('.ctrl')];
+for (const btn of controlButtons) {
+  const action = btn.dataset.act;
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); // no focus, no synthetic click, no page scroll
+    input[action] = true;
+    btn.classList.add('active');
+  });
+  const release = () => btn.classList.remove('active');
+  btn.addEventListener('pointerup', release);
+  btn.addEventListener('pointercancel', release);
+  btn.addEventListener('pointerleave', release);
+  btn.addEventListener('contextmenu', (e) => e.preventDefault());
+}
 
 /* ---------------------------- GAME STATE -------------------------- */
 const state = {
   phase: 'running', distance: 0, speed: SPEED, lane: 1,
   x: laneX(1), y: 0, vy: 0, grounded: true,
-  slide: false, slideT: 0, h: STAND_H, runPhase: 0, score: 0, best: 0,
+  slide: false, slideT: 0, h: STAND_H, runPhase: 0, score: 0, best: store.best(),
 };
 
-/* ------------------------------ SCORING --------------------------- */
-const store = {
-  read() { try { return parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0; } catch { return 0; } },
-  write(v) { try { localStorage.setItem(BEST_KEY, String(v)); } catch { /* storage blocked */ } },
-};
-state.best = store.read();
-
-/* -------------------------------- UI ------------------------------ */
+/* ------------------------------- UI ------------------------------- */
 const ui = {
   score: document.querySelector('#score .value'),
   best: document.querySelector('#best .value'),
-  speed: document.querySelector('#speed .value'),
+  speed: document.getElementById('speed'),
   overlay: document.getElementById('overlay'),
   final: document.getElementById('final'),
   finalBest: document.getElementById('finalBest'),
   cause: document.getElementById('cause'),
-  hint: document.getElementById('hint'),
+  langBtn: document.getElementById('lang'),
+  restartBtn: document.getElementById('restart'),
   shown: { score: -1, best: -1, speed: -1 },
 };
-ui.best.textContent = state.best;
 
-function showGameOver(cause) {
-  ui.cause.textContent = cause;
+function applyLang(next) {
+  if (next) {
+    lang = next;
+    store.set(LANG_KEY, lang); // only an explicit choice is persisted; otherwise follow the browser
+  }
+  const s = STRINGS[lang];
+  document.documentElement.lang = s.htmlLang;
+  document.title = s.docTitle;
+  for (const el of document.querySelectorAll('[data-i18n]')) {
+    const value = s[el.dataset.i18n];
+    if (value) el.textContent = value;
+  }
+  for (const [key, attr] of [['aLeft', 'left'], ['aRight', 'right'], ['aJump', 'jump'], ['aSlide', 'slide']]) {
+    const btn = controlButtons.find((b) => b.dataset.act === attr);
+    if (btn) btn.setAttribute('aria-label', s[key]);
+  }
+  ui.langBtn.setAttribute('aria-label', s.aLang);
+  ui.shown.speed = -1; // speed line carries a translated unit suffix
+  if (state.phase === 'over') showGameOver(hitKey);
+}
+
+function toggleLang() {
+  applyLang(lang === 'zh' ? 'en' : 'zh');
+}
+ui.langBtn.addEventListener('click', toggleLang);
+
+function showGameOver(kind) {
+  hitKey = kind;
+  ui.cause.textContent = STRINGS[lang].cause[kind] || STRINGS[lang].cause.block;
   ui.final.textContent = state.score;
   ui.finalBest.textContent = state.best;
   ui.overlay.classList.add('show');
@@ -369,15 +473,16 @@ function reset() {
   state.y = 0; state.vy = 0; state.grounded = true;
   state.slide = false; state.slideT = 0; state.h = STAND_H;
   state.runPhase = 0; state.score = 0;
+  input.left = input.right = input.jump = input.slide = false;
   segments.forEach((s, i) => { s.position.z = SEG_LEN - i * SEG_LEN; });
   props.forEach((p, i) => placeProp(p, -SPAWN_AHEAD + ((i * 0.618) % 1) * propOffset));
   ui.overlay.classList.remove('show');
-  ui.hint.classList.remove('faded');
   ui.shown.score = ui.shown.best = ui.shown.speed = -1;
 }
+ui.restartBtn.addEventListener('click', reset);
 
 /* --------------------------- COLLISION (AABB) --------------------- */
-let hitCause = 'You hit an obstacle';
+let hitKey = 'block';
 
 function collides() {
   const pMinX = state.x - HALF_W, pMaxX = state.x + HALF_W;
@@ -391,7 +496,7 @@ function collides() {
       if (pMaxX < bx - b.hx || pMinX > bx + b.hx) continue;
       if (pMaxZ < cz - b.hz || pMinZ > cz + b.hz) continue;
       if (pMaxY < b.y0 || pMinY > b.y1) continue;
-      hitCause = `You hit the ${o.kind}`;
+      hitKey = o.kind;
       return true;
     }
   }
@@ -450,13 +555,13 @@ function update(dt) {
   refillSpawns(state.distance);
 
   state.score = Math.floor(state.distance);
-  if (state.score > state.best) { state.best = state.score; store.write(state.best); }
+  if (state.score > state.best) { state.best = state.score; store.saveBest(state.best); }
 
   state.runPhase += dt * (5 + state.speed * 0.55);
 
   if (collides()) {
     state.phase = 'over';
-    showGameOver(hitCause);
+    showGameOver(hitKey);
   }
 }
 
@@ -498,7 +603,10 @@ function updateHud() {
   if (ui.shown.score !== state.score) { ui.shown.score = state.score; ui.score.textContent = state.score; }
   if (ui.shown.best !== state.best) { ui.shown.best = state.best; ui.best.textContent = state.best; }
   const kmh = Math.round(state.speed * 3.6);
-  if (ui.shown.speed !== kmh) { ui.shown.speed = kmh; ui.speed.textContent = kmh + ' km/h'; }
+  if (ui.shown.speed !== kmh) {
+    ui.shown.speed = kmh;
+    ui.speed.textContent = `${kmh} ${STRINGS[lang].kmh}`;
+  }
 }
 
 /* ----------------------------- MAIN LOOP -------------------------- *
@@ -513,7 +621,6 @@ function frame(now) {
   accumulator += dt;
   let guard = 0;
   while (accumulator >= STEP && guard++ < 30) { update(STEP); accumulator -= STEP; }
-  if (input.restart) { input.restart = false; reset(); }
 
   posePlayer();
   updateCamera(dt);
@@ -531,8 +638,8 @@ addEventListener('resize', () => {
 });
 
 /* ------------------------------- BOOT ------------------------------ */
+applyLang();
 reset();
-setTimeout(() => ui.hint.classList.add('faded'), 9000);
 requestAnimationFrame(frame);
 </script>
 </body>
