@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Endless Runner</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+  }
+}
+</script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1b26; }
+  body { font-family: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; color: #eaf3fb; }
+  #game { display: block; width: 100%; height: 100%; }
+
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+  .stat { position: absolute; top: 22px; line-height: 1.1; text-shadow: 0 2px 10px rgba(0, 0, 0, .55); }
+  .stat .label { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; opacity: .6; }
+  .stat .value { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #score { left: 26px; }
+  #best { right: 26px; text-align: right; }
+  #best .value { font-size: 20px; font-weight: 500; }
+  #speed { left: 50%; transform: translateX(-50%); text-align: center; }
+  #speed .value { font-size: 16px; font-weight: 500; opacity: .8; }
+
+  #hint { position: absolute; left: 26px; bottom: 22px; font-size: 12.5px; letter-spacing: .04em;
+          opacity: .55; transition: opacity .9s ease; }
+  #hint.faded { opacity: 0; }
+  kbd { font-family: inherit; border: 1px solid rgba(234, 243, 251, .4); border-radius: 4px;
+        padding: 1px 5px; margin: 0 1px; }
+
+  #overlay { position: absolute; inset: 0; display: none; place-items: center;
+             background: radial-gradient(70% 70% at 50% 45%, rgba(6, 14, 20, .5), rgba(6, 14, 20, .82)); }
+  #overlay.show { display: grid; }
+  .card { text-align: center; padding: 34px 48px; border: 1px solid rgba(234, 243, 251, .18);
+          border-radius: 14px; background: rgba(10, 22, 32, .55); backdrop-filter: blur(6px); }
+  .card h1 { margin: 0 0 6px; font-size: 40px; }
+  .card .sub { margin: 0 0 22px; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; opacity: .6; }
+  .card .row { display: flex; gap: 44px; justify-content: center; margin-bottom: 24px; }
+  .card .row div { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; opacity: .65; }
+  .card .row strong { display: block; font-size: 42px; opacity: 1; letter-spacing: 0;
+                      font-variant-numeric: tabular-nums; margin-top: 6px; }
+  .card .row .record { color: #ffd479; }
+  .card p { margin: 0; font-size: 14px; opacity: .8; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- UI -->
+<div id="hud">
+  <div class="stat" id="score"><div class="label">Score</div><div class="value">0</div></div>
+  <div class="stat" id="best"><div class="label">Best</div><div class="value">0</div></div>
+  <div class="stat" id="speed"><div class="label">Speed</div><div class="value">0 km/h</div></div>
+  <div id="hint"><kbd>A</kbd><kbd>D</kbd> / <kbd>&larr;</kbd><kbd>&rarr;</kbd> lane &nbsp;·&nbsp;
+    <kbd>Space</kbd> jump &nbsp;·&nbsp; <kbd>&darr;</kbd> slide &nbsp;·&nbsp; <kbd>R</kbd> restart</div>
+  <div id="overlay">
+    <div class="card">
+      <h1>Game Over</h1>
+      <p class="sub" id="cause">You hit an obstacle</p>
+      <div class="row">
+        <div>Score<strong id="final">0</strong></div>
+        <div>Best<strong id="finalBest" class="record">0</strong></div>
+      </div>
+      <p>Press <kbd>R</kbd> to run again</p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ------------------------------------------------------------------ *
+ * CONFIG — difficulty lives in SPEED / SPEED_RAMP; LANE_COUNT is     *
+ * read by every subsystem, so 3 -> 4 just works.                     *
+ * ------------------------------------------------------------------ */
+const SPEED          = 12;      // starting forward speed, units per second
+const SPEED_RAMP     = 0.055;   // speed gained per unit of distance travelled
+const SPEED_MAX      = 30;
+const LANE_COUNT     = 3;
+const LANE_W         = 2.4;     // width of one lane
+const STEP           = 1 / 120; // fixed logical timestep for movement + collision
+const GRAVITY        = 34;
+const JUMP_V         = 11;      // apex ~1.78 units — clears the 1.0-high block
+const SLIDE_TIME     = 0.6;
+const STAND_H        = 1.65;    // collider height while running
+const SLIDE_H        = 0.78;    // collider height while sliding — passes under gates
+const HALF_W         = 0.35;    // player collider half-width
+const HALF_D         = 0.35;    // player collider half-depth
+const SPAWN_AHEAD    = 120;     // how far up the track obstacle rows exist
+const FIRST_ROW_AT   = 42;      // grace distance before the first obstacle
+const DESPAWN_BEHIND = 16;
+const ROW_GAP        = 21;      // base spacing between obstacle rows
+const BEST_KEY       = 'astra-3d-001-endless-runner.best';
+
+const laneX = (i) => (i - (LANE_COUNT - 1) / 2) * LANE_W;
+const TRACK_W = LANE_COUNT * LANE_W + 2;
+
+/* ----------------------------- RENDERING -------------------------- */
+const canvas = document.getElementById('game');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight, false);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+const SKY = 0x9fd0e8;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(SKY);
+scene.fog = new THREE.Fog(SKY, 45, SPAWN_AHEAD * 0.95);
+
+const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 400);
+camera.position.set(0, 4.4, 9.4);
+
+const hemi = new THREE.HemisphereLight(0xdff2ff, 0x3a4a52, 1.15);
+scene.add(hemi);
+
+const sun = new THREE.DirectionalLight(0xfff2d8, 2.1);
+sun.position.set(-14, 26, 14);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+sun.shadow.camera.left = -22;
+sun.shadow.camera.right = 22;
+sun.shadow.camera.top = 26;
+sun.shadow.camera.bottom = -32;
+sun.shadow.camera.far = 90;
+sun.shadow.bias = -0.0006;
+sun.shadow.normalBias = 0.02;
+scene.add(sun);
+
+const mat = (hex, roughness = 0.85) =>
+  new THREE.MeshStandardMaterial({ color: hex, roughness, metalness: 0, flatShading: true });
+
+const mesh = (geo, material, x = 0, y = 0, z = 0, cast = true, receive = false) => {
+  const m = new THREE.Mesh(geo, material);
+  m.position.set(x, y, z);
+  m.castShadow = cast;
+  m.receiveShadow = receive;
+  return m;
+};
+
+const world = new THREE.Group();
+scene.add(world);
+
+/* ------------------------------- WORLD ---------------------------- *
+ * Repeating ground segments plus roadside props; both scroll with    *
+ * the current speed so the motion is readable. Primitives only.      */
+const SEG_LEN = 24;
+const SEG_COUNT = Math.ceil((SPAWN_AHEAD + SEG_LEN * 2) / SEG_LEN);
+const terrain = mesh(new THREE.BoxGeometry(320, 0.2, 340), mat(0x47654f, 0.95), 0, -0.5, -40, false, true);
+world.add(terrain);
+const segGeo = new THREE.BoxGeometry(TRACK_W, 0.4, SEG_LEN);
+const dashGeo = new THREE.BoxGeometry(0.09, 0.06, SEG_LEN * 0.5);
+const railGeo = new THREE.BoxGeometry(0.3, 0.5, SEG_LEN);
+const slabMat = [mat(0x2b3f4c, 0.9), mat(0x253742, 0.9)];
+const dashMat = mat(0x74a3b8, 0.7);
+const railMat = mat(0x1b2a33, 0.9);
+
+function buildSegment(i) {
+  const g = new THREE.Group();
+  g.add(mesh(segGeo, slabMat[i % 2], 0, -0.2, 0, false, true));
+  for (let l = 1; l < LANE_COUNT; l++) {
+    g.add(mesh(dashGeo, dashMat, laneX(l) - LANE_W / 2, 0.02, 0, false));
+  }
+  for (const side of [-1, 1]) {
+    g.add(mesh(railGeo, railMat, side * (TRACK_W / 2 - 0.15), 0.05, 0, false, true));
+  }
+  g.position.z = SEG_LEN - i * SEG_LEN;
+  return g;
+}
+
+const segments = [];
+for (let i = 0; i < SEG_COUNT; i++) {
+  const s = buildSegment(i);
+  segments.push(s);
+  world.add(s);
+}
+
+const trunkGeo = new THREE.CylinderGeometry(0.16, 0.22, 1.3, 6);
+const leafGeo = new THREE.BoxGeometry(1.7, 1.7, 1.7);
+const rockGeo = new THREE.CylinderGeometry(0.8, 1.1, 1.0, 5);
+const trunkMat = mat(0x6b4b32);
+const leafMat = mat(0x3f7d55);
+const rockMat = mat(0x54626b);
+
+const propOffset = SPAWN_AHEAD + SEG_LEN * 2;
+function placeProp(p, z) {
+  p.position.x = (Math.random() < 0.5 ? -1 : 1) * (TRACK_W / 2 + 1.8 + Math.random() * 5);
+  p.position.z = z;
+  p.rotation.y = Math.random() * Math.PI;
+}
+
+const props = [];
+for (let i = 0; i < 16; i++) {
+  const p = new THREE.Group();
+  if (i % 3 === 2) p.add(mesh(rockGeo, rockMat, 0, 0.5, 0));
+  else { p.add(mesh(trunkGeo, trunkMat, 0, 0.65, 0)); p.add(mesh(leafGeo, leafMat, 0, 2.1, 0)); }
+  placeProp(p, -SPAWN_AHEAD + Math.random() * propOffset);
+  props.push(p);
+  world.add(p);
+}
+
+/* ------------------------------ PLAYER ---------------------------- *
+ * `figure` squashes to the live collider height, so the crouch you   *
+ * see is the crouch the collision system uses.                       */
+const player = new THREE.Group();
+const figure = new THREE.Group();
+player.add(figure);
+world.add(player);
+
+const skinMat = mat(0xf2c9a0, 0.8);
+const shirtMat = mat(0xe4633a, 0.75);
+const pantsMat = mat(0x2f4a6b, 0.8);
+
+const armGeo = new THREE.BoxGeometry(0.16, 0.5, 0.16);
+armGeo.translate(0, -0.25, 0);
+const legGeo = new THREE.BoxGeometry(0.2, 0.62, 0.22);
+legGeo.translate(0, -0.31, 0);
+
+figure.add(mesh(new THREE.BoxGeometry(0.62, 0.72, 0.4), shirtMat, 0, 1.06, 0));
+figure.add(mesh(new THREE.BoxGeometry(0.4, 0.4, 0.36), skinMat, 0, 1.48, 0));
+const armL = mesh(armGeo, skinMat, -0.4, 1.3, 0);
+const armR = mesh(armGeo, skinMat, 0.4, 1.3, 0);
+const legL = mesh(legGeo, pantsMat, -0.16, 0.62, 0);
+const legR = mesh(legGeo, pantsMat, 0.16, 0.62, 0);
+figure.add(armL, armR, legL, legR);
+
+/* ---------------------------- OBSTACLES --------------------------- *
+ * block  — 1.0 tall, jump over it                                    *
+ * gate   — bar starts at 1.15, slide under it (posts are decoration) *
+ * pillar — full height, take another lane                            *
+ * Each `boxes` entry is a local AABB: x/z offsets + half extents,    *
+ * y0/y1 absolute heights.                                            */
+const KINDS = {
+  block: {
+    label: 'jump block',
+    boxes: [{ ox: 0, hx: 0.9, hz: 0.5, y0: 0.0, y1: 1.0 }],
+    build() {
+      const g = new THREE.Group();
+      g.add(mesh(new THREE.BoxGeometry(1.8, 1.0, 1.0), mat(0xc9a227, 0.8), 0, 0.5, 0));
+      g.add(mesh(new THREE.BoxGeometry(1.86, 0.14, 1.06), mat(0x3a2f14, 0.9), 0, 0.99, 0));
+      return g;
+    },
+  },
+  gate: {
+    label: 'slide gate',
+    boxes: [{ ox: 0, hx: 1.48, hz: 0.35, y0: 1.15, y1: 2.6 }],
+    build() {
+      const g = new THREE.Group();
+      g.add(mesh(new THREE.BoxGeometry(2.96, 1.1, 0.7), mat(0x4fa3d1, 0.75), 0, 1.75, 0));
+      g.add(mesh(new THREE.BoxGeometry(3.0, 0.18, 0.8), mat(0x143244, 0.9), 0, 1.2, 0));
+      for (const s of [-1, 1]) g.add(mesh(new THREE.BoxGeometry(0.26, 2.4, 0.26), mat(0x35566b), s * 1.36, 1.2, 0));
+      return g;
+    },
+  },
+  pillar: {
+    label: 'wall pillar',
+    boxes: [{ ox: 0, hx: 0.66, hz: 0.66, y0: 0.0, y1: 2.6 }],
+    build() {
+      const g = new THREE.Group();
+      g.add(mesh(new THREE.CylinderGeometry(0.6, 0.72, 2.6, 6), mat(0x9b59b6, 0.8), 0, 1.3, 0));
+      g.add(mesh(new THREE.CylinderGeometry(0.32, 0.4, 0.5, 6), mat(0x6c3f80, 0.8), 0, 2.8, 0));
+      return g;
+    },
+  },
+};
+const KIND_NAMES = Object.keys(KINDS);
+const obstacles = [];
+
+/* ------------------------------ SPAWNING -------------------------- *
+ * Rows are generated ahead of the player; at least one lane per row  *
+ * is left clear, so every row has a guaranteed line through it.      */
+let spawnCursor = FIRST_ROW_AT; // absolute distance along the track
+
+function spawnRow(d) {
+  const lanes = [];
+  for (let i = 0; i < LANE_COUNT; i++) lanes.push(i);
+  for (let i = lanes.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [lanes[i], lanes[j]] = [lanes[j], lanes[i]];
+  }
+  const count = Math.min(LANE_COUNT - 1, 1 + (Math.random() < 0.62 ? 1 : 0));
+  for (let i = 0; i < count; i++) {
+    const kind = KIND_NAMES[(Math.random() * KIND_NAMES.length) | 0];
+    const def = KINDS[kind];
+    const o = { group: def.build(), boxes: def.boxes, kind: def.label, lane: lanes[i], d: d + (Math.random() - 0.5) * 2 };
+    o.group.position.set(laneX(lanes[i]), 0, -o.d);
+    obstacles.push(o);
+    world.add(o.group);
+  }
+}
+
+function refillSpawns(distance) {
+  while (spawnCursor - distance < SPAWN_AHEAD) {
+    spawnRow(spawnCursor - distance);
+    const gap = ROW_GAP + distance * 0.02 + Math.random() * 10;
+    spawnCursor += Math.min(46, gap);
+  }
+}
+
+/* ------------------------------- INPUT ---------------------------- */
+const input = { left: false, right: false, jump: false, slide: false, restart: false };
+const HANDLED = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyA', 'KeyD', 'KeyR'];
+
+addEventListener('keydown', (e) => {
+  if (e.repeat || !HANDLED.includes(e.code)) return;
+  e.preventDefault();
+  if (e.code === 'ArrowLeft' || e.code === 'KeyA') input.left = true;
+  else if (e.code === 'ArrowRight' || e.code === 'KeyD') input.right = true;
+  else if (e.code === 'Space' || e.code === 'ArrowUp') input.jump = true;
+  else if (e.code === 'ArrowDown') input.slide = true;
+  else if (e.code === 'KeyR') input.restart = true;
+});
+addEventListener('keyup', (e) => {
+  if (e.code === 'ArrowLeft' || e.code === 'KeyA') input.left = false;
+  if (e.code === 'ArrowRight' || e.code === 'KeyD') input.right = false;
+});
+addEventListener('blur', () => { input.left = input.right = false; });
+
+/* ---------------------------- GAME STATE -------------------------- */
+const state = {
+  phase: 'running', distance: 0, speed: SPEED, lane: 1,
+  x: laneX(1), y: 0, vy: 0, grounded: true,
+  slide: false, slideT: 0, h: STAND_H, runPhase: 0, score: 0, best: 0,
+};
+
+/* ------------------------------ SCORING --------------------------- */
+const store = {
+  read() { try { return parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0; } catch { return 0; } },
+  write(v) { try { localStorage.setItem(BEST_KEY, String(v)); } catch { /* storage blocked */ } },
+};
+state.best = store.read();
+
+/* -------------------------------- UI ------------------------------ */
+const ui = {
+  score: document.querySelector('#score .value'),
+  best: document.querySelector('#best .value'),
+  speed: document.querySelector('#speed .value'),
+  overlay: document.getElementById('overlay'),
+  final: document.getElementById('final'),
+  finalBest: document.getElementById('finalBest'),
+  cause: document.getElementById('cause'),
+  hint: document.getElementById('hint'),
+  shown: { score: -1, best: -1, speed: -1 },
+};
+ui.best.textContent = state.best;
+
+function showGameOver(cause) {
+  ui.cause.textContent = cause;
+  ui.final.textContent = state.score;
+  ui.finalBest.textContent = state.best;
+  ui.overlay.classList.add('show');
+}
+
+function reset() {
+  for (const o of obstacles) world.remove(o.group);
+  obstacles.length = 0;
+  spawnCursor = FIRST_ROW_AT;
+  state.phase = 'running';
+  state.distance = 0;
+  state.speed = SPEED;
+  state.lane = ((LANE_COUNT - 1) / 2) | 0;
+  state.x = laneX(state.lane);
+  state.y = 0; state.vy = 0; state.grounded = true;
+  state.slide = false; state.slideT = 0; state.h = STAND_H;
+  state.runPhase = 0; state.score = 0;
+  segments.forEach((s, i) => { s.position.z = SEG_LEN - i * SEG_LEN; });
+  props.forEach((p, i) => placeProp(p, -SPAWN_AHEAD + ((i * 0.618) % 1) * propOffset));
+  ui.overlay.classList.remove('show');
+  ui.hint.classList.remove('faded');
+  ui.shown.score = ui.shown.best = ui.shown.speed = -1;
+}
+
+/* --------------------------- COLLISION (AABB) --------------------- */
+let hitCause = 'You hit an obstacle';
+
+function collides() {
+  const pMinX = state.x - HALF_W, pMaxX = state.x + HALF_W;
+  const pMinZ = -HALF_D, pMaxZ = HALF_D;
+  const pMinY = state.y, pMaxY = state.y + state.h;
+  for (const o of obstacles) {
+    if (o.d > 6 || o.d < -6) continue;
+    const cx = laneX(o.lane), cz = -o.d;
+    for (const b of o.boxes) {
+      const bx = cx + b.ox;
+      if (pMaxX < bx - b.hx || pMinX > bx + b.hx) continue;
+      if (pMaxZ < cz - b.hz || pMinZ > cz + b.hz) continue;
+      if (pMaxY < b.y0 || pMinY > b.y1) continue;
+      hitCause = `You hit the ${o.kind}`;
+      return true;
+    }
+  }
+  return false;
+}
+
+/* ------------------------------ UPDATE ---------------------------- *
+ * One fixed logical step: intent -> physics -> scroll -> spawn ->    *
+ * collision -> score.                                                */
+function update(dt) {
+  if (state.phase !== 'running') { input.jump = input.slide = false; return; }
+
+  if (input.left) { input.left = false; state.lane = Math.max(0, state.lane - 1); }
+  if (input.right) { input.right = false; state.lane = Math.min(LANE_COUNT - 1, state.lane + 1); }
+
+  if (input.jump) {
+    input.jump = false;
+    if (state.grounded) { state.vy = JUMP_V; state.grounded = false; state.slide = false; state.slideT = 0; }
+  }
+  if (input.slide) {
+    input.slide = false;
+    if (state.grounded && !state.slide) { state.slide = true; state.slideT = SLIDE_TIME; }
+  }
+  if (state.slide) { state.slideT -= dt; if (state.slideT <= 0) state.slide = false; }
+
+  if (!state.grounded) {
+    state.vy -= GRAVITY * dt;
+    state.y += state.vy * dt;
+    if (state.y <= 0) { state.y = 0; state.vy = 0; state.grounded = true; }
+  }
+
+  // collider height eases toward the pose, so the crouch cannot be cheated
+  const targetH = state.slide && state.grounded ? SLIDE_H : STAND_H;
+  state.h += (targetH - state.h) * Math.min(1, dt * 22);
+
+  state.x += (laneX(state.lane) - state.x) * Math.min(1, dt * 16);
+
+  state.speed = Math.min(SPEED_MAX, SPEED + state.distance * SPEED_RAMP);
+  const travel = state.speed * dt;
+  state.distance += travel;
+
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    const o = obstacles[i];
+    o.d -= travel;
+    o.group.position.z = -o.d;
+    if (o.d < -DESPAWN_BEHIND) { world.remove(o.group); obstacles.splice(i, 1); }
+  }
+  for (const s of segments) {
+    s.position.z += travel;
+    if (s.position.z > SEG_LEN * 1.5) s.position.z -= SEG_LEN * SEG_COUNT;
+  }
+  for (const p of props) {
+    p.position.z += travel;
+    if (p.position.z > 14) placeProp(p, p.position.z - propOffset);
+  }
+  refillSpawns(state.distance);
+
+  state.score = Math.floor(state.distance);
+  if (state.score > state.best) { state.best = state.score; store.write(state.best); }
+
+  state.runPhase += dt * (5 + state.speed * 0.55);
+
+  if (collides()) {
+    state.phase = 'over';
+    showGameOver(hitCause);
+  }
+}
+
+/* ---------------------- CAMERA + POSE (RENDERING) ----------------- *
+ * Third-person follow camera with exponential smoothing.             */
+const camTarget = new THREE.Vector3(0, 4.4, 9.4);
+
+function updateCamera(dt) {
+  const k = 1 - Math.exp(-6.5 * dt);
+  camTarget.set(state.x * 0.55, 4.4 + state.y * 0.28, 9.4);
+  camera.position.lerp(camTarget, k);
+  camera.lookAt(state.x * 0.85, 1.5 + state.y * 0.5, -12);
+  sun.position.x = state.x - 14;
+}
+
+function posePlayer() {
+  player.position.set(state.x, state.y, 0);
+  figure.scale.y = state.h / STAND_H;
+  figure.rotation.x = state.slide && state.grounded ? -0.34 : 0;
+  player.rotation.z = (laneX(state.lane) - state.x) * -0.09;
+
+  if (state.grounded && !state.slide) {
+    const swing = Math.sin(state.runPhase) * 0.9;
+    legL.rotation.x = swing;
+    legR.rotation.x = -swing;
+    armL.rotation.x = -swing * 0.8;
+    armR.rotation.x = swing * 0.8;
+  } else if (!state.grounded) {
+    armL.rotation.x = armR.rotation.x = -2.2;
+    legL.rotation.x = 0.5;
+    legR.rotation.x = -0.4;
+  } else {
+    armL.rotation.x = armR.rotation.x = 1.6;
+    legL.rotation.x = legR.rotation.x = -0.5;
+  }
+}
+
+function updateHud() {
+  if (ui.shown.score !== state.score) { ui.shown.score = state.score; ui.score.textContent = state.score; }
+  if (ui.shown.best !== state.best) { ui.shown.best = state.best; ui.best.textContent = state.best; }
+  const kmh = Math.round(state.speed * 3.6);
+  if (ui.shown.speed !== kmh) { ui.shown.speed = kmh; ui.speed.textContent = kmh + ' km/h'; }
+}
+
+/* ----------------------------- MAIN LOOP -------------------------- *
+ * requestAnimationFrame with a delta clock; the accumulator feeds a  *
+ * fixed timestep, so speed is framerate-independent.                 */
+let last = performance.now();
+let accumulator = 0;
+
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.2);
+  last = now;
+  accumulator += dt;
+  let guard = 0;
+  while (accumulator >= STEP && guard++ < 30) { update(STEP); accumulator -= STEP; }
+  if (input.restart) { input.restart = false; reset(); }
+
+  posePlayer();
+  updateCamera(dt);
+  updateHud();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+/* --------------------------- VIEWPORT / RESIZE --------------------- */
+addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+});
+
+/* ------------------------------- BOOT ------------------------------ */
+reset();
+setTimeout(() => ui.hint.classList.add('faded'), 9000);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
